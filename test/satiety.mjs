@@ -119,38 +119,38 @@ check('空池返回空串、非数组也安全', () => {
 });
 
 groups.push('台词文件与语境一致');
-const feed = readJson('feed-lines.json');
-const hunger = readJson('hunger-lines.json');
+const feedLines = readJson('feed-lines.json');
+const hungerLines = readJson('hunger-lines.json');
 check('喂饭四组台词齐全且都非空', () => {
   for (const k of ['starving', 'hungry', 'normal', 'full']) {
-    assert.ok(Array.isArray(feed[k]) && feed[k].length > 0, `${k} 组缺失或为空`);
+    assert.ok(Array.isArray(feedLines[k]) && feedLines[k].length > 0, `${k} 组缺失或为空`);
   }
 });
 check('饿话是 5 档且都非空', () => {
-  assert.equal(hunger.length, 5);
-  hunger.forEach((t, i) => assert.ok(Array.isArray(t) && t.length > 0, `第 ${i + 1} 档缺失或为空`));
+  assert.equal(hungerLines.length, 5);
+  hungerLines.forEach((t, i) => assert.ok(Array.isArray(t) && t.length > 0, `第 ${i + 1} 档缺失或为空`));
 });
 check('"再吃真的要变成大肥鱼了"只出现在 full 档（饱食度很高时）', () => {
-  const hit = ['starving', 'hungry', 'normal', 'full'].filter((k) => feed[k].some((l) => l.includes('大肥鱼')));
+  const hit = ['starving', 'hungry', 'normal', 'full'].filter((k) => feedLines[k].some((l) => l.includes('大肥鱼')));
   assert.deepEqual(hit, ['full'], '这句应只在 full 档：' + hit.join(','));
 });
 check('饿着吃上的两档说的是"终于吃上/救命饭"这类语境', () => {
-  const hungryish = [...feed.starving, ...feed.hungry].join('');
+  const hungryish = [...feedLines.starving, ...feedLines.hungry].join('');
   assert.match(hungryish, /终于|救命|等好久|饿/, 'starving/hungry 档要有挨饿语境');
 });
 check('计数台词（含 N）只在 normal 档', () => {
-  const withN = ['starving', 'hungry', 'normal', 'full'].filter((k) => feed[k].some((l) => l.includes('N')));
+  const withN = ['starving', 'hungry', 'normal', 'full'].filter((k) => feedLines[k].some((l) => l.includes('N')));
   assert.deepEqual(withN, ['normal']);
 });
 check('每个池子内部没有重复句（否则"相邻不重复"会被同一句破坏）', () => {
-  for (const [k, list] of Object.entries(feed)) {
+  for (const [k, list] of Object.entries(feedLines)) {
     assert.equal(new Set(list).size, list.length, `${k} 档有重复句`);
   }
-  hunger.forEach((list, i) => assert.equal(new Set(list).size, list.length, `饿话第 ${i + 1} 档有重复句`));
+  hungerLines.forEach((list, i) => assert.equal(new Set(list).size, list.length, `饿话第 ${i + 1} 档有重复句`));
 });
 check('饿话与喂饭台词没有交叉重复（避免刚喊完饿就重复同一句）', () => {
-  const hungerAll = new Set(hunger.flat());
-  const clash = Object.values(feed).flat().filter((l) => hungerAll.has(l));
+  const hungerAll = new Set(hungerLines.flat());
+  const clash = Object.values(feedLines).flat().filter((l) => hungerAll.has(l));
   assert.deepEqual(clash, [], '交叉重复：' + clash.join(' / '));
 });
 
