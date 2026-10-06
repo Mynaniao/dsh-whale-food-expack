@@ -1,0 +1,290 @@
+/**
+ * dsh-whale-plus — 叠加层样式。
+ *
+ * 几何与配色取自用户原实现（第三次改动后的最终值）：
+ *   键盘 x 51%..79%、top 85.5%、高 7.5%、深蓝 #203170 + 浅色键条纹
+ *   两只手 7.4%×6.6%、top 78.5%、左 x 54% / 右 x 65.5%、
+ *     填充 #aabae0（= 头发主色 #566cad 同色相提亮到 78%）、描边 #3f5598
+ *   嘴 left 54% / top 36%、13%×5.5%
+ *   吐司 left 50% / top 32%，字号 --dshw-base/1026*44
+ *
+ * 所有叠加元素都 pointer-events:none，除了食物本身 —— 绝不挡住鲸鱼本体与页面。
+ * 类名统一 dshwp- 前缀，避免与上游那 325 个 dshwv-* 类名互相干扰。
+ *
+ * 饭碗与饱食度气泡都锚在 `.dshwp-corner`（= 鲸鱼图那个 59.45% 方块）里，
+ * 于是鲸鱼缩放/移动/被拖走时它们一起跟随 —— 不再用屏幕固定坐标。
+ * 拖拽时 JS 会把饭碗临时搬到 body 并改 fixed（躲开上游镜像带来的 transform 包含块问题）。
+ */
+
+/* ---------- 饭碗 + 饱食度气泡的锚定容器（与鲸鱼图同盒） ---------- */
+.dshwp-corner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 59.45%;
+  height: 59.45%;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* ---------- 食物（白米饭） ---------- */
+.dshwp-food {
+  position: absolute;
+  /* 在鱼头之上（立绘图顶边 = 0%），横向偏右 */
+  left: 68%;
+  top: -36%;
+  width: 24%;
+  height: 24%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .25));
+  pointer-events: auto;
+  transition: left .3s ease, top .3s ease, width .25s ease, height .25s ease, opacity .25s ease;
+}
+
+/* ---------- 饱食度气泡（饭碗下面、鱼头上面） ---------- */
+.dshwp-sat {
+  position: absolute;
+  left: 68%;
+  top: -10%;
+  width: 24%;
+  height: 9%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .95);
+  border: 2px solid #203170;
+  color: #203170;
+  font-size: calc(var(--dshw-base, 250px) / 1026 * 38);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
+  color-scheme: light;
+}
+.dshwp-sat.dshwp-sat-warn {
+  border-color: #d98a1f;
+  color: #b06f0d;
+}
+.dshwp-sat.dshwp-sat-bad {
+  border-color: #e0433f;
+  color: #c62f2b;
+  animation: dshwp-hint 1.8s ease-in-out infinite;
+}
+.dshwp-food.dshwp-food-grabbing {
+  cursor: grabbing;
+  transform: scale(1.25);
+  transition: none;
+}
+/* 空碗不是拿来拖的，是拿来点的 —— 轻微跳动提示可以点 */
+.dshwp-food.dshwp-rice-empty {
+  cursor: pointer;
+  animation: dshwp-hint 1.8s ease-in-out infinite;
+}
+@keyframes dshwp-hint {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+.dshwp-food svg,
+.dshwp-food img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* ---------- 键盘 + 两只手 ---------- */
+/* 容器与鲸鱼图（上游 .dshwv-img）**同一个盒子**：right/bottom 对齐 + 59.45% 方块。
+   百分比因此是相对"这张立绘"量的 —— 原实现的 51%..79% / 78.5% 是相对根元素量的，
+   那是为全身立绘设计的；上游这张是脸部特写，用根元素百分比会跑到肩膀外面。 */
+.dshwp-hands {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 59.45%;
+  height: 59.45%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .28s ease;
+  z-index: 3;
+}
+.dshwp-hands.dshwp-hands-on {
+  opacity: 1;
+}
+.dshwp-kb {
+  position: absolute;
+  /* 沉到底（88% + 12% = 100%）+ 再左移；键帽改成 5 个真实元素，尺寸绝对一致（原来用
+     repeating-linear-gradient，84% 宽 + 50% 位置导致首尾被裁 → 看着一大一小） */
+  left: 19%;
+  top: 88%;
+  width: 44%;
+  height: 12%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+  padding: 0 4%;
+  box-sizing: border-box;
+  border-radius: 8% / 26%;
+  background: #203170;
+  border: 2px solid #16224d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .28);
+}
+.dshwp-key {
+  flex: 1 1 0;
+  height: 42%;
+  border-radius: 24%;
+  background: rgba(201, 211, 238, .85);
+}
+.dshwp-paw {
+  position: absolute;
+  /* 比键盘上沿再高一点（78.5% + 9% = 87.5%，离 88% 留 0.5% 缝），别陷进键里；
+     形状改成正圆角 */
+  top: 78.5%;
+  width: 11%;
+  height: 9%;
+  border-radius: 50%;
+  background: #aabae0;
+  border: 2px solid #3f5598;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+}
+.dshwp-paw-l { left: 25%; animation: dshwv-paw .3s ease-in-out infinite alternate; }
+.dshwp-paw-r { left: 41%; animation: dshwv-paw .3s ease-in-out infinite alternate-reverse; }
+
+/* ---------- 嘴（吃饭） ---------- */
+/* 外层容器与鲸鱼图（上游 .dshwv-img）**同一个盒子**：right/bottom 对齐、59.45% 方块。
+   嘴形在容器内按 54%/36% / 13%×5.5% 定位 —— 这正是原实现的几何，纯 CSS，不需要 JS 量像素。 */
+.dshwp-mouthwrap {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 59.45%;
+  height: 59.45%;
+  pointer-events: none;
+  z-index: 4;
+}
+.dshwp-mouth {
+  position: absolute;
+  /* 上游立绘是"脸部特写"（DSniang1.png 610×610）：眼睛在 57%~69% 高，
+     嘴约在 72%、横向 52% 处。这里按这张图标定，不再是原实现那句 54%/36% ——
+     那句是照用户自己的立绘量的，用在上游这张图上会跑到额头发带上。 */
+  left: 54%;
+  top: 75%;
+  width: 7%;
+  height: 3.5%;
+  margin-left: -3.5%;
+  margin-top: -1.75%;
+  /* 深蓝系（跟头发 #566cad / 键盘 #203170 同族），不再用那个发黑的紫 */
+  background: radial-gradient(ellipse at 50% 25%, #41598f 0%, #26325e 60%, #1a2340 100%);
+  border-radius: 50% 50% 58% 58%;
+  transform-origin: 50% 30%;
+  transform: scaleY(0);
+  opacity: 0;
+  transition: transform .14s ease-out, opacity .12s ease-out;
+  pointer-events: none;
+  box-shadow: inset 0 -3px 6px rgba(0, 0, 0, .4), inset 0 3px 4px rgba(255, 255, 255, .14);
+  z-index: 4;
+}
+.dshwp-mouth.dshwp-mouth-open {
+  opacity: 1;
+  transform: scaleY(1);
+}
+.dshwp-mouth.dshwp-mouth-chomp {
+  animation: dshwv-chomp .16s ease-in-out 4;
+}
+
+/* ---------- 吐司（工具名 / 台词 / 收工） ---------- */
+.dshwp-toast {
+  position: absolute;
+  left: 50%;
+  top: 32%;
+  transform: translate(-50%, 0) scale(.9);
+  /* 之前是 nowrap + 58% + ellipsis，长台词（"已经吃了 N 碗了…"）会被省略号截断；
+     现在允许折成两行，宽度也放宽 */
+  max-width: 86%;
+  padding: calc(var(--dshw-base, 250px) / 1026 * 12) calc(var(--dshw-base, 250px) / 1026 * 22);
+  border-radius: calc(var(--dshw-base, 250px) / 1026 * 22);
+  background: rgba(255, 255, 255, .95);
+  border: 2px solid #203170;
+  color: #203170;
+  font-size: calc(var(--dshw-base, 250px) / 1026 * 42);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: .02em;
+  text-align: center;
+  white-space: normal;
+  word-break: break-word;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .16s ease, transform .2s ease;
+  z-index: 5;
+  color-scheme: light;
+}
+.dshwp-toast.dshwp-toast-on {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+.dshwp-toast.dshwp-toast-bad {
+  border-color: #e0433f;
+  color: #c62f2b;
+}
+.dshwp-toast.dshwp-toast-done {
+  border-color: #2fa24c;
+  color: #227f3c;
+}
+
+/* ---------- 鲸鱼本体动画（类挂在面积最大的那张 img 上） ---------- */
+.dshwp-typing {
+  animation: dshwv-type .26s ease-in-out infinite alternate;
+  transform-origin: 50% 86%;
+}
+.dshwp-pop {
+  animation: dshwv-pop .62s cubic-bezier(.34, 1.56, .64, 1) 1;
+  transform-origin: 50% 86%;
+}
+.dshwp-shake {
+  animation: dshwv-shake .42s ease-in-out 2;
+  transform-origin: 50% 86%;
+}
+.dshwp-chewing {
+  animation: dshwv-chew .28s ease 2;
+  transform-origin: 50% 100%;
+}
+
+/* ---------- 调位置模式（Ctrl+Alt+M） ---------- */
+.dshwp-cal {
+  outline: 1px dashed #e0433f;
+  outline-offset: 1px;
+  pointer-events: auto !important;
+  cursor: grab;
+  touch-action: none;
+}
+.dshwp-cal:active {
+  cursor: grabbing;
+}
+
+/* ---------- 用户原实现的 keyframes（逐字保留，已按名字去重） ---------- */
+
+@keyframes dshwv-chew{0%{transform:scaleY(1) scaleX(1)}25%{transform:scaleY(1.05) scaleX(.97)}50%{transform:scaleY(.97) scaleX(1.03)}75%{transform:scaleY(1.03) scaleX(.98)}100%{transform:scaleY(1) scaleX(1)}}
+
+@keyframes dshwv-chomp{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.22)}}
+
+@keyframes dshwv-bob{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-1.4%) scaleY(1.012)}}
+
+@keyframes dshwv-type{0%{transform:translateY(0) rotate(-.5deg)}100%{transform:translateY(-1.1%) rotate(.5deg)}}
+
+@keyframes dshwv-pop{0%{transform:scale(1)}45%{transform:scale(1.055) translateY(-3%)}100%{transform:scale(1)}}
+
+@keyframes dshwv-shake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-1.6%) rotate(-1.2deg)}75%{transform:translateX(1.6%) rotate(1.2deg)}}
+
+@keyframes dshwv-paw{0%{transform:translateY(0)}100%{transform:translateY(-38%)}}

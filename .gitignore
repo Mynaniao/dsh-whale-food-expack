@@ -1,0 +1,14 @@
+# 依赖与运行时产物
+node_modules/
+pnpm-lock.yaml
+
+# 系统/编辑器杂项
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+.vscode/
+.idea/
+
+# 本地打包产物
+*.tgz

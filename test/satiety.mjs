@@ -1,0 +1,90 @@
+/**
+ * 饱食度纯逻辑自测：node test/satiety.mjs
+ * 不联网、不需要 DSH、不碰 localStorage。
+ */
+import assert from 'node:assert/strict';
+import {
+  IDLE_PER_MIN, WORK_MULTIPLIER, FEED_GAIN, HUNGRY_AT, TIER_SPAN, TIER_COUNT, FULL_AT,
+  clamp, decayRate, decay, feed, isHungry, tierOf, canEat,
+} from '../assets/satiety.mjs';
+
+let passed = 0;
+const groups = [];
+function check(title, fn) {
+  try { fn(); passed++; }
+  catch (err) { console.error(`\n✗ ${title}\n  ${err.message}`); process.exitCode = 1; }
+}
+
+groups.push('规格常量');
+check('数值与需求一致：-2%/分钟、干活 ×5、一碗 +5%、50% 起饿、每 10% 一档、共 5 档', () => {
+  assert.equal(IDLE_PER_MIN, 2);
+  assert.equal(WORK_MULTIPLIER, 5);
+  assert.equal(FEED_GAIN, 5);
+  assert.equal(HUNGRY_AT, 50);
+  assert.equal(TIER_SPAN, 10);
+  assert.equal(TIER_COUNT, 5);
+  assert.ok(FULL_AT > 99 && FULL_AT <= 100);
+});
+
+groups.push('下降速度');
+check('空闲 2%/分钟，干活 10%/分钟', () => {
+  assert.equal(decayRate(false), 2);
+  assert.equal(decayRate(true), 10);
+});
+check('满值放 1 分钟：空闲 → 98，干活 → 90', () => {
+  assert.equal(decay(100, 1, false), 98);
+  assert.equal(decay(100, 1, true), 90);
+});
+check('干活 5 倍速确实等于空闲的 5 倍消耗', () => {
+  const idle = 100 - decay(100, 3, false);
+  const work = 100 - decay(100, 3, true);
+  assert.equal(work, idle * WORK_MULTIPLIER);
+});
+check('不会掉到负数，也不会超过 100', () => {
+  assert.equal(decay(5, 10, false), 0);
+  assert.equal(decay(100, 0, true), 100);
+  assert.equal(decay(50, -5, true), 50, '负时间按 0 处理');
+  assert.equal(clamp(-3), 0);
+  assert.equal(clamp(120), 100);
+});
+
+groups.push('喂食');
+check('一碗 +5%，封顶 100', () => {
+  assert.equal(feed(50), 55);
+  assert.equal(feed(96), 100);
+  assert.equal(feed(100), 100);
+});
+check('太饱（≥99.5）时喂不进', () => {
+  assert.equal(canEat(99), true);
+  assert.equal(canEat(99.6), false);
+  assert.equal(canEat(100), false);
+});
+
+groups.push('饥饿档位');
+check('档位边界：50/40/30/20/10 各换一档，共 5 档', () => {
+  assert.equal(tierOf(50), 0, '刚降到 50% 是第 1 档');
+  assert.equal(tierOf(40.1), 0);
+  assert.equal(tierOf(40), 1);
+  assert.equal(tierOf(30), 2);
+  assert.equal(tierOf(20), 3);
+  assert.equal(tierOf(10), 4);
+  assert.equal(tierOf(0), 4, '最低也封在第 5 档');
+});
+check('isHungry 在 ≤50% 时为真', () => {
+  assert.equal(isHungry(50), true);
+  assert.equal(isHungry(50.01), false);
+});
+
+groups.push('经济性（让用户看清这套数值的节奏）');
+check('一碗饭能撑：空闲 2.5 分钟 / 干活 30 秒', () => {
+  const idleMinutes = FEED_GAIN / decayRate(false);
+  const workMinutes = FEED_GAIN / decayRate(true);
+  assert.equal(idleMinutes, 2.5);
+  assert.equal(workMinutes, 0.5);
+});
+check('从满值饿到 0：空闲 50 分钟 / 一直干活 10 分钟', () => {
+  assert.equal(100 / decayRate(false), 50);
+  assert.equal(100 / decayRate(true), 10);
+});
+
+console.log(`\nok — ${groups.length} 组断言 / ${passed} 项检查全部通过`);

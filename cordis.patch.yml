@@ -1,0 +1,6 @@
+# dsh-whale-plus bundle layer: inserts the add-on row.
+# Loaded via `dsh plugin --profile web add "link:<path>"` — the row id stays
+# stable so re-adds and profile patches can target it.
+- insert:
+    - id: dsh-whale-plus
+      name: 'dsh-whale-plus'
