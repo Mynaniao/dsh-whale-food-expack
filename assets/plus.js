@@ -15,7 +15,7 @@
  *
  * 本文件由宿主以 `<script type="module">` 注入，所以能用 import 引纯逻辑模块（便于单测）。
  */
-import { decay, feed, isHungry, tierOf, canEat, feedTier } from './satiety.mjs';
+import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTERVAL_MS, HUNGER_TOAST_MS } from './satiety.mjs';
 
 (function () {
   if (window.__dshWhalePlus) return;
@@ -54,6 +54,7 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier } from './satiety.mjs';
   var satLastSave = Date.now();
   var satLastShown = -1;      // 上次渲染的整数百分比（避免每秒刷 DOM）
   var hungerLastAt = 0;       // 上次喊饿的时间；0 = 还没喊过 → 刚饿下来会立刻喊一句
+  var lastHungerLine = '';    // 上一句饿话（相邻两句不重复）
   var workRunning = false;    // agent 是否在干活（决定是否 ×5 消耗）
   var satBubble = null;       // 饱食度气泡
   var satText = null;         // 气泡里的文字（镜像时只翻这层）
@@ -98,7 +99,7 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier } from './satiety.mjs';
     if (satText && satText.style.transform !== t) satText.style.transform = t;
   }
 
-  /** 每秒：按"是否在干活"扣饱食度；≤50% 每分钟喊一句，档位随饥饿加深而变。 */
+  /** 每秒：按"是否在干活"扣饱食度；≤50% 每 30 秒喊一句（停留 3 秒），档位随饥饿加深而变。 */
   function tickSatiety() {
     var now = Date.now();
     var minutes = (now - satLastTick) / 60000;
@@ -109,11 +110,12 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier } from './satiety.mjs';
     if (now - satLastSave > 10000) saveSatiety();
 
     if (!isHungry(satiety)) { hungerLastAt = 0; return; }   // 吃饱了 → 下次饿下来立刻喊
-    if (hungerLastAt && now - hungerLastAt < 60000) return;  // 一分钟一句
+    if (hungerLastAt && now - hungerLastAt < HUNGER_INTERVAL_MS) return;  // 30 秒一句
     hungerLastAt = now;
     var tier = tierOf(satiety);
-    var lines = (HUNGER_LINES[tier] && HUNGER_LINES[tier].length) ? HUNGER_LINES[tier] : ['饿了…'];
-    showToast(pickOne(lines), tier >= 3 ? 'bad' : (tier >= 1 ? '' : 'done'), 2600);
+    var pool = (HUNGER_LINES[tier] && HUNGER_LINES[tier].length) ? HUNGER_LINES[tier] : ['饿了…'];
+    lastHungerLine = pickFresh(pool, lastHungerLine);        // 相邻两句不重复
+    showToast(lastHungerLine, tier >= 3 ? 'bad' : (tier >= 1 ? '' : 'done'), HUNGER_TOAST_MS);
   }
 
   var root = null;      // 鲸鱼根元素

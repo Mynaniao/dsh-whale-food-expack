@@ -8,11 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
   IDLE_PER_MIN, WORK_MULTIPLIER, FEED_GAIN, HUNGRY_AT, TIER_SPAN, TIER_COUNT, FULL_AT,
+  HUNGER_INTERVAL_MS, HUNGER_TOAST_MS,
   FED_FULL_AT, FED_HUNGRY_AT, FED_STARVING_AT,
-  clamp, decayRate, decay, feed, isHungry, tierOf, canEat, feedTier,
+  clamp, decayRate, decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh,
 } from '../assets/satiety.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const readJson = (f) => JSON.parse(readFileSync(join(HERE, '..', 'assets', f), 'utf8'));
 let passed = 0;
 const groups = [];
 function check(title, fn) {
@@ -29,6 +31,10 @@ check('数值与需求一致：-2%/分钟、干活 ×5、一碗 +5%、50% 起饿
   assert.equal(TIER_SPAN, 10);
   assert.equal(TIER_COUNT, 5);
   assert.ok(FULL_AT > 99 && FULL_AT <= 100);
+});
+check('饿话频率 30 秒、停留 3 秒', () => {
+  assert.equal(HUNGER_INTERVAL_MS, 30000);
+  assert.equal(HUNGER_TOAST_MS, 3000);
 });
 
 groups.push('下降速度');
@@ -97,24 +103,55 @@ check('三个分界常量符合需求（80 / 50 / 20）', () => {
   assert.equal(FED_STARVING_AT, 20);
 });
 
-groups.push('台词文件与语境一致（feed-lines.json）');
-const lines = JSON.parse(readFileSync(join(HERE, '..', 'assets', 'feed-lines.json'), 'utf8'));
-check('四组台词齐全且都非空', () => {
+groups.push('相邻两句不重复（pickFresh）');
+check('不会挑到上一句', () => {
+  const pool = ['A', 'B', 'C'];
+  assert.equal(pickFresh(pool, 'A', () => 0), 'B', '排除 A 之后第一个是 B');
+  assert.equal(pickFresh(pool, 'B', () => 0), 'A');
+  assert.equal(pickFresh(pool, 'C', () => 0.99), 'B');
+});
+check('池子只剩一句时只能重复它', () => {
+  assert.equal(pickFresh(['只有我'], '只有我', () => 0), '只有我');
+});
+check('空池返回空串、非数组也安全', () => {
+  assert.equal(pickFresh([], 'A'), '');
+  assert.equal(pickFresh(null, 'A'), '');
+});
+
+groups.push('台词文件与语境一致');
+const feed = readJson('feed-lines.json');
+const hunger = readJson('hunger-lines.json');
+check('喂饭四组台词齐全且都非空', () => {
   for (const k of ['starving', 'hungry', 'normal', 'full']) {
-    assert.ok(Array.isArray(lines[k]) && lines[k].length > 0, `${k} 组缺失或为空`);
+    assert.ok(Array.isArray(feed[k]) && feed[k].length > 0, `${k} 组缺失或为空`);
   }
 });
+check('饿话是 5 档且都非空', () => {
+  assert.equal(hunger.length, 5);
+  hunger.forEach((t, i) => assert.ok(Array.isArray(t) && t.length > 0, `第 ${i + 1} 档缺失或为空`));
+});
 check('"再吃真的要变成大肥鱼了"只出现在 full 档（饱食度很高时）', () => {
-  const hit = ['starving', 'hungry', 'normal', 'full'].filter((k) => lines[k].some((l) => l.includes('大肥鱼')));
+  const hit = ['starving', 'hungry', 'normal', 'full'].filter((k) => feed[k].some((l) => l.includes('大肥鱼')));
   assert.deepEqual(hit, ['full'], '这句应只在 full 档：' + hit.join(','));
 });
 check('饿着吃上的两档说的是"终于吃上/救命饭"这类语境', () => {
-  const hungryish = [...lines.starving, ...lines.hungry].join('');
+  const hungryish = [...feed.starving, ...feed.hungry].join('');
   assert.match(hungryish, /终于|救命|等好久|饿/, 'starving/hungry 档要有挨饿语境');
 });
 check('计数台词（含 N）只在 normal 档', () => {
-  const withN = ['starving', 'hungry', 'normal', 'full'].filter((k) => lines[k].some((l) => l.includes('N')));
+  const withN = ['starving', 'hungry', 'normal', 'full'].filter((k) => feed[k].some((l) => l.includes('N')));
   assert.deepEqual(withN, ['normal']);
+});
+check('每个池子内部没有重复句（否则"相邻不重复"会被同一句破坏）', () => {
+  for (const [k, list] of Object.entries(feed)) {
+    assert.equal(new Set(list).size, list.length, `${k} 档有重复句`);
+  }
+  hunger.forEach((list, i) => assert.equal(new Set(list).size, list.length, `饿话第 ${i + 1} 档有重复句`));
+});
+check('饿话与喂饭台词没有交叉重复（避免刚喊完饿就重复同一句）', () => {
+  const hungerAll = new Set(hunger.flat());
+  const clash = Object.values(feed).flat().filter((l) => hungerAll.has(l));
+  assert.deepEqual(clash, [], '交叉重复：' + clash.join(' / '));
 });
 
 groups.push('经济性（让用户看清这套数值的节奏）');

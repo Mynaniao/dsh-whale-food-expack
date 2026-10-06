@@ -5,8 +5,9 @@
  *   - 空闲：每分钟 -2%
  *   - agent 干活时：速度 ×5（即 -10%/分钟）
  *   - 喂一碗白米饭：+5%
- *   - ≤50% 就开始主动喊饿，每分钟一句；每再降 10% 换一档，共 5 档（50~40 / 40~30 / 30~20 / 20~10 / ≤10）
+ *   - ≤50% 就开始主动喊饿，**每 30 秒一句**、吐司停留 **3 秒**；每再降 10% 换一档，共 5 档
  *   - 喂饭的台词也分语境（starving / hungry / normal / full），见 feedTier()
+ *   - 所有随机台词（饿话、喂饭台词）**相邻两句不重复**，统一走 pickFresh()
  */
 
 /** 空闲时的下降速度（百分点/分钟）。 */
@@ -23,6 +24,11 @@ export const TIER_SPAN = 10;
 export const TIER_COUNT = 5;
 /** 高于这个值就"太饱了"，喂不进（避免满值还消耗饭碗）。 */
 export const FULL_AT = 99.5;
+
+/** 饿话频率：≤50% 时每 30 秒说一句。 */
+export const HUNGER_INTERVAL_MS = 30000;
+/** 饿话在吐司里停留 3 秒。 */
+export const HUNGER_TOAST_MS = 3000;
 
 /** 喂饭台词的语境分界：吃饱到什么程度算"很饱"（这套台词里才有"要变成大肥鱼"）。 */
 export const FED_FULL_AT = 80;
@@ -81,4 +87,20 @@ export const feedTier = (satiety) => {
   if (satiety <= FED_STARVING_AT) return 'starving';
   if (satiety <= FED_HUNGRY_AT) return 'hungry';
   return 'normal';
+};
+
+/**
+ * 从池子里挑一句，**避开上一句**（相邻不重复）；池子只剩一句时只能重复。
+ *
+ * @param pool - 候选台词。
+ * @param last - 上一句（可为空）。
+ * @param random - 随机源（测试可注入）。
+ * @returns 选中的句子；空池返回空串。
+ */
+export const pickFresh = (pool, last, random = Math.random) => {
+  const list = Array.isArray(pool) ? pool : [];
+  if (!list.length) return '';
+  const fresh = list.filter((l) => l !== last);
+  const from = fresh.length ? fresh : list;
+  return from[Math.floor(random() * from.length)];
 };

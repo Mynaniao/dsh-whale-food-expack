@@ -16,9 +16,10 @@
 
 ## 饱食度细节
 
-- **数值**都在 `assets/satiety.mjs` 顶部：`IDLE_PER_MIN=2`、`WORK_MULTIPLIER=5`、`FEED_GAIN=5`、`HUNGRY_AT=50`、`TIER_SPAN=10`、`TIER_COUNT=5`、`FULL_AT=99.5`。
+- **数值**都在 `assets/satiety.mjs` 顶部：`IDLE_PER_MIN=2`、`WORK_MULTIPLIER=5`、`FEED_GAIN=5`、`HUNGRY_AT=50`、`TIER_SPAN=10`、`TIER_COUNT=5`、`FULL_AT=99.5`、`HUNGER_INTERVAL_MS=30000`、`HUNGER_TOAST_MS=3000`。
 - **节奏参考**（`test/satiety.mjs` 有断言）：一碗饭能撑 **2.5 分钟**不干活 / **30 秒**干活；从满值饿到 0：空闲 **50 分钟** / 一直干活 **10 分钟**。嫌太快就改这两个常量。
-- **饿话**：`assets/hunger-lines.json`，**5 个数组对应 5 档**（第 1 档最轻）。想加就加，F5 生效。
+- **饿话**：`assets/hunger-lines.json`，**5 个数组对应 5 档**（第 1 档最轻）。≤50% 时**每 30 秒**说一句、吐司**停留 3 秒**；想加就加，F5 生效。
+- **相邻两句不重复**：饿话与喂饭台词都经 `pickFresh()` 选句，绝不会连着说同一句（跨池也不会有同一句，`test/satiety.mjs` 有断言守住）。事件类吐司（开工/工具名/失败/收工）是事实播报，不做去重。
 - **喂饭台词按语境分四档**（`assets/feed-lines.json`）：`starving`(≤20%，"救命饭"那种) / `hungry`(≤50%，"终于能吃上饭了") / `normal`(其余) / `full`(**≥80%** —— "再吃真的要变成大肥鱼了"只在这一档，不饿了就不该说这句)。判断用的是**吃之前**的饱食度（说"终于吃上"的是挨饿那一刻）。也兼容旧的扁平数组写法（会被当成 `normal`），改完 F5 生效。
 - **存档**：`localStorage['dshwv-satiety']` + `['dshwv-satiety-at']`。**页面关着的时间按空闲 −2%/分钟补扣**（离线时无法知道 agent 是否在跑，取保守档）；想改成"离线不扣"，删掉 `loadSatiety()` 里那次 `decay` 即可。
 - **太饱不吃**：≥99.5% 时拖过去只提示「已经吃得饱饱的」且**不消耗**这碗饭（不想要就删 `swallow()` 开头那段）。
