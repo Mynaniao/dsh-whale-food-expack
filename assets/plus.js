@@ -15,7 +15,7 @@
  *
  * 本文件由宿主以 `<script type="module">` 注入，所以能用 import 引纯逻辑模块（便于单测）。
  */
-import { decay, feed, isHungry, tierOf, canEat } from './satiety.mjs';
+import { decay, feed, isHungry, tierOf, canEat, feedTier } from './satiety.mjs';
 
 (function () {
   if (window.__dshWhalePlus) return;
@@ -23,7 +23,17 @@ import { decay, feed, isHungry, tierOf, canEat } from './satiety.mjs';
 
   var PREFIX = '/dsh-whale-plus';
   var RICE_SVG = '';
-  var FEED_LINES = ['啊呜~ 好吃！', '吧唧吧唧…真香！', '谢谢投喂，肚子圆滚滚~', '已经吃了 N 碗了，我是真能吃！'];
+  /**
+   * 喂饭台词，按"吃之前"的饱食度分四种语境：
+   *   starving ≤20% / hungry ≤50% / normal 其余 / full ≥80%（"再吃要变成大肥鱼"只在这档）。
+   * 由 /dsh-whale-plus/feed-lines.json 覆盖（也兼容旧的扁平数组，会当成 normal）。
+   */
+  var FEED_LINES = {
+    starving: ['终于…终于能吃上饭了！', '救命的饭！我不客气了！'],
+    hungry: ['终于能吃上饭了，谢谢！', '饭真香…我开动啦！'],
+    normal: ['啊呜~ 好吃！', '吧唧吧唧…真香！', '已经吃了 N 碗了，我是真能吃！'],
+    full: ['再吃真的要变成大肥鱼了！', '嗝~ 已经饱到冒泡泡了…'],
+  };
   /** 5 档饿话，从轻到重（由 /dsh-whale-plus/hunger-lines.json 覆盖）。 */
   var HUNGER_LINES = [['有点饿了…'], ['真的饿了…'], ['饿得不行了…'], ['快饿死了…'], ['饿…说不出话了…']];
   var KEY_COUNT = 'dshwv-feed-count';
@@ -125,7 +135,12 @@ import { decay, feed, isHungry, tierOf, canEat } from './satiety.mjs';
     if (t && t.indexOf('<svg') === 0) { RICE_SVG = t; renderFood(); }
   }).catch(function () { /* 没有就用 emoji */ });
   fetch(PREFIX + '/feed-lines.json').then(function (r) { return r.json(); }).then(function (a) {
-    if (Array.isArray(a) && a.length) FEED_LINES = a;
+    if (Array.isArray(a) && a.length) { FEED_LINES = { starving: a, hungry: a, normal: a, full: a }; }
+    else if (a && typeof a === 'object') {
+      ['starving', 'hungry', 'normal', 'full'].forEach(function (k) {
+        if (Array.isArray(a[k]) && a[k].length) FEED_LINES[k] = a[k];
+      });
+    }
   }).catch(function () { /* 用内置台词 */ });
   fetch(PREFIX + '/hunger-lines.json').then(function (r) { return r.json(); }).then(function (a) {
     if (Array.isArray(a) && a.length) HUNGER_LINES = a;
@@ -414,6 +429,7 @@ import { decay, feed, isHungry, tierOf, canEat } from './satiety.mjs';
       resetFood();
       return;
     }
+    var satietyBefore = satiety;   // 台词语境看"吃之前"：饿着吃上 vs 平常 vs 已经很饱
     var mouthX = target.left + target.width * 0.54;
     var mouthY = target.top + target.height * 0.36;
     food.style.transition = 'left .28s ease-in,top .28s ease-in,width .28s ease,height .28s ease,opacity .28s ease';
@@ -436,7 +452,7 @@ import { decay, feed, isHungry, tierOf, canEat } from './satiety.mjs';
     satiety = feed(satiety);       // 一碗 +5%
     saveSatiety();
     renderSatiety();
-    var msg = pickFeedLine().replace('N', String(feedCount));
+    var msg = pickFeedLine(satietyBefore).replace('N', String(feedCount));
     showToast(msg, 'done', 2000);
     setTimeout(function () {
       // 吃完必须把嘴收回去，否则它会一直张着（曾经就是这个 bug）
@@ -453,11 +469,17 @@ import { decay, feed, isHungry, tierOf, canEat } from './satiety.mjs';
     setTimeout(function () { el.classList.remove('dshwp-chewing'); }, 700);
   }
 
-  /** 台词：相邻不重复。 */
-  function pickFeedLine() {
-    var pool = FEED_LINES.filter(function (l) { return l !== lastFeedLine; });
-    if (!pool.length) pool = FEED_LINES;
-    lastFeedLine = pickOne(pool);
+  /**
+   * 台词：按语境选池子（饿着吃上饭 vs 平常 vs 已经很饱），相邻不重复。
+   *
+   * @param satietyBefore - **吃之前**的饱食度（"终于吃上饭"说的是挨饿那一刻）。
+   */
+  function pickFeedLine(satietyBefore) {
+    var tier = feedTier(typeof satietyBefore === 'number' ? satietyBefore : satiety);
+    var pool = FEED_LINES[tier] && FEED_LINES[tier].length ? FEED_LINES[tier] : FEED_LINES.normal;
+    var fresh = pool.filter(function (l) { return l !== lastFeedLine; });
+    if (!fresh.length) fresh = pool;
+    lastFeedLine = pickOne(fresh);
     return lastFeedLine;
   }
 

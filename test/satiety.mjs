@@ -3,11 +3,16 @@
  * 不联网、不需要 DSH、不碰 localStorage。
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import {
   IDLE_PER_MIN, WORK_MULTIPLIER, FEED_GAIN, HUNGRY_AT, TIER_SPAN, TIER_COUNT, FULL_AT,
-  clamp, decayRate, decay, feed, isHungry, tierOf, canEat,
+  FED_FULL_AT, FED_HUNGRY_AT, FED_STARVING_AT,
+  clamp, decayRate, decay, feed, isHungry, tierOf, canEat, feedTier,
 } from '../assets/satiety.mjs';
 
+const HERE = dirname(fileURLToPath(import.meta.url));
 let passed = 0;
 const groups = [];
 function check(title, fn) {
@@ -60,7 +65,7 @@ check('太饱（≥99.5）时喂不进', () => {
   assert.equal(canEat(100), false);
 });
 
-groups.push('饥饿档位');
+groups.push('饥饿档位（喊话台词用）');
 check('档位边界：50/40/30/20/10 各换一档，共 5 档', () => {
   assert.equal(tierOf(50), 0, '刚降到 50% 是第 1 档');
   assert.equal(tierOf(40.1), 0);
@@ -75,12 +80,47 @@ check('isHungry 在 ≤50% 时为真', () => {
   assert.equal(isHungry(50.01), false);
 });
 
+groups.push('喂饭语境（吃之前的状态决定台词）');
+check('四个语境：starving / hungry / normal / full', () => {
+  assert.equal(feedTier(0), 'starving');
+  assert.equal(feedTier(FED_STARVING_AT), 'starving');
+  assert.equal(feedTier(21), 'hungry');
+  assert.equal(feedTier(FED_HUNGRY_AT), 'hungry', '刚好 50% 算"饿着吃上饭"');
+  assert.equal(feedTier(50.1), 'normal');
+  assert.equal(feedTier(79.9), 'normal');
+  assert.equal(feedTier(FED_FULL_AT), 'full');
+  assert.equal(feedTier(100), 'full');
+});
+check('三个分界常量符合需求（80 / 50 / 20）', () => {
+  assert.equal(FED_FULL_AT, 80);
+  assert.equal(FED_HUNGRY_AT, 50);
+  assert.equal(FED_STARVING_AT, 20);
+});
+
+groups.push('台词文件与语境一致（feed-lines.json）');
+const lines = JSON.parse(readFileSync(join(HERE, '..', 'assets', 'feed-lines.json'), 'utf8'));
+check('四组台词齐全且都非空', () => {
+  for (const k of ['starving', 'hungry', 'normal', 'full']) {
+    assert.ok(Array.isArray(lines[k]) && lines[k].length > 0, `${k} 组缺失或为空`);
+  }
+});
+check('"再吃真的要变成大肥鱼了"只出现在 full 档（饱食度很高时）', () => {
+  const hit = ['starving', 'hungry', 'normal', 'full'].filter((k) => lines[k].some((l) => l.includes('大肥鱼')));
+  assert.deepEqual(hit, ['full'], '这句应只在 full 档：' + hit.join(','));
+});
+check('饿着吃上的两档说的是"终于吃上/救命饭"这类语境', () => {
+  const hungryish = [...lines.starving, ...lines.hungry].join('');
+  assert.match(hungryish, /终于|救命|等好久|饿/, 'starving/hungry 档要有挨饿语境');
+});
+check('计数台词（含 N）只在 normal 档', () => {
+  const withN = ['starving', 'hungry', 'normal', 'full'].filter((k) => lines[k].some((l) => l.includes('N')));
+  assert.deepEqual(withN, ['normal']);
+});
+
 groups.push('经济性（让用户看清这套数值的节奏）');
 check('一碗饭能撑：空闲 2.5 分钟 / 干活 30 秒', () => {
-  const idleMinutes = FEED_GAIN / decayRate(false);
-  const workMinutes = FEED_GAIN / decayRate(true);
-  assert.equal(idleMinutes, 2.5);
-  assert.equal(workMinutes, 0.5);
+  assert.equal(FEED_GAIN / decayRate(false), 2.5);
+  assert.equal(FEED_GAIN / decayRate(true), 0.5);
 });
 check('从满值饿到 0：空闲 50 分钟 / 一直干活 10 分钟', () => {
   assert.equal(100 / decayRate(false), 50);

@@ -6,6 +6,7 @@
  *   - agent 干活时：速度 ×5（即 -10%/分钟）
  *   - 喂一碗白米饭：+5%
  *   - ≤50% 就开始主动喊饿，每分钟一句；每再降 10% 换一档，共 5 档（50~40 / 40~30 / 30~20 / 20~10 / ≤10）
+ *   - 喂饭的台词也分语境（starving / hungry / normal / full），见 feedTier()
  */
 
 /** 空闲时的下降速度（百分点/分钟）。 */
@@ -22,6 +23,13 @@ export const TIER_SPAN = 10;
 export const TIER_COUNT = 5;
 /** 高于这个值就"太饱了"，喂不进（避免满值还消耗饭碗）。 */
 export const FULL_AT = 99.5;
+
+/** 喂饭台词的语境分界：吃饱到什么程度算"很饱"（这套台词里才有"要变成大肥鱼"）。 */
+export const FED_FULL_AT = 80;
+/** 喂饭台词的语境分界：低于等于这个值算"饿着吃上饭"。 */
+export const FED_HUNGRY_AT = 50;
+/** 喂饭台词的语境分界：低于等于这个值算"快饿死了才吃上"。 */
+export const FED_STARVING_AT = 20;
 
 /** 夹在 0~100。 */
 export const clamp = (v) => Math.max(0, Math.min(100, v));
@@ -56,3 +64,21 @@ export const canEat = (satiety) => satiety < FULL_AT;
  */
 export const tierOf = (satiety) =>
   Math.max(0, Math.min(TIER_COUNT - 1, Math.floor((HUNGRY_AT - satiety) / TIER_SPAN)));
+
+/**
+ * 喂饭台词的语境（**用吃之前**的饱食度算，因为"终于吃上饭"说的是挨饿那一刻）。
+ *
+ *   'starving' ≤20% → 救命饭、终于吃上了
+ *   'hungry'   ≤50% → 饭真香、来得正好
+ *   'normal'   其余  → 平常的好吃
+ *   'full'     ≥80% → 已经很饱，"再吃要变成大肥鱼了"只在这档
+ *
+ * @param satiety - 吃饭之前的饱食度。
+ * @returns 语境名。
+ */
+export const feedTier = (satiety) => {
+  if (satiety >= FED_FULL_AT) return 'full';
+  if (satiety <= FED_STARVING_AT) return 'starving';
+  if (satiety <= FED_HUNGRY_AT) return 'hungry';
+  return 'normal';
+};
