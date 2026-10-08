@@ -4,7 +4,7 @@
   "description": "大肥鱼附加插件：给插件市场的 dsh-whale-widget 叠加喂白米饭（满碗→喂掉→空碗→点击盛满）、饱食度系统（干活掉得快、饿了会喊）、以及干活时敲键盘露手与当前工具提示。不修改本体，可随上游更新。",
   "type": "module",
   "license": "MIT",
-  "author": "maoyi",
+  "author": "Mynianiao",
   "keywords": [
     "dsh-plugin",
     "dsh",
@@ -15,6 +15,14 @@
     "satiety",
     "pet"
   ],
+  "homepage": "https://github.com/Mynianiao/dsh-whale-plus#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mynianiao/dsh-whale-plus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Mynianiao/dsh-whale-plus/issues"
+  },
   "main": "lib/index.js",
   "files": [
     "lib",
