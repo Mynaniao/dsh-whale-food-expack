@@ -134,6 +134,8 @@ node test/satiety.mjs    # 24 项：下降速率、喂食、档位、语境、�
 - Node ≥ 20（仅开发与测试需要；装插件本身不需要）
 - 结构：宿主 `lib/index.js`（折叠 agent 活动成 `/dsh-whale-food-expack/activity.json`，并白名单式暴露 `assets/`）；
   前端 `assets/plus.js` + `plus.css`（1.2 秒轮询，按 `seq` 判新事件）；纯逻辑抽在 `assets/satiety.mjs` 便于单测。
+- **实现细节**（架构图、activity 折叠规则、饱食度常量表、几何与校准坐标、本地存档键、调试方法）见
+  [`docs/tech-notes.md`](docs/tech-notes.md)
 
 ## 许可与致谢
 
