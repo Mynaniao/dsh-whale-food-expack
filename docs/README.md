@@ -1,15 +1,21 @@
-# docs —— 演示素材目录
+# docs —— 演示素材
 
-放 README「演示」一节引用的动图（**不会** 打进 npm 包）：
+README「演示」一节用的是这里的三个**动图 WebP**（GitHub 正常显示动画，体积比 GIF 小约 86%）：
 
-| 文件名 | 内容 |
+| 文件 | 内容 |
 |---|---|
-| `demo-feed.gif` | 拖饭喂食：把饭碗拖到鲸鱼身上 → 张嘴吃掉 → 冒台词 |
-| `demo-refill.gif` | 点空碗续饭：吃完留下空碗 → 左键点一下盛满 |
-| `demo-typing.gif` | 干活敲键盘：鲸鱼敲键盘 + 露手 + 工具名吐司 |
+| `demo-overview.webp` | 喂饭 + 干活敲键盘同时进行（首图） |
+| `demo-feed.webp` | 不干活时喂饭：拖到鲸鱼身上 → 吃掉 → 冒台词（含空碗续饭） |
+| `demo-typing.webp` | 干活时敲键盘 + 露手 + 工具名吐司 |
 
-录制小建议：
+## 想重录或替换
 
-- 只留挂件附近区域（别录整个桌面），**每段 ≤ 8 秒**、**每个文件 ≤ 2 MB**（GitHub README 加载才不卡）
-- Windows 可用 `Win+G`（Xbox Game Bar）或 ScreenToGif 录，导出 GIF
-- 放好文件后，把根 `README.md` 里「## 演示」一节那段注释去掉，图片就会显示
+1. 录一段 GIF（**只录挂件附近**，≤10 秒；Windows 可用 `Win+G` 或 ScreenToGif）
+2. 用 ffmpeg 转成动图 WebP（体积能小一个数量级）：
+
+   ```bash
+   ffmpeg -i input.gif -vf "fps=12,scale=420:-1:flags=lanczos" \
+          -c:v libwebp -lossless 0 -q:v 62 -compression_level 6 -loop 0 -an demo-feed.webp
+   ```
+
+3. 覆盖同名文件即可，README 不用动。（想再小一点就调低 `fps` / `scale` / `-q:v`）
