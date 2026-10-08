@@ -1,0 +1,18 @@
+# 49 条断言，跑得很快：不装依赖、不联网、不需要 DSH
+name: test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 运行自测（host + satiety）
+        run: npm test

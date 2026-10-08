@@ -1,95 +1,144 @@
 # dsh-whale-food-expack
 
-给**插件市场安装的大肥鱼**（`dsh-whale-widget`）叠加三项改动的附加插件。本体一个字节都不改，
-所以上游更新照常：`dsh plugin --profile web update dsh-whale-widget` 之后附加功能继续生效。
+> 🍚 给 DSH 的**小鲸鱼记账挂件**加上「喂饭 + 饱食度 + 敲键盘」的附加包
+>
+> **不修改本体一个字节** · 纯本机运行 · **不向任何服务器发送数据** · 非官方项目
 
-## 加的是什么
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](#开发与测试)
+[![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 
-| # | 功能 | 行为 |
+当前版本 **1.0.0** · 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
+
+---
+
+## 演示
+
+<!-- 录屏到位后：删掉下面这行的注释标记，并把三张图放好
+![拖饭喂食](docs/demo-feed.gif)
+![点空碗续饭](docs/demo-refill.gif)
+![干活敲键盘 + 工具吐司](docs/demo-typing.gif)
+-->
+
+🎬 **演示动图录制中**，三段：
+1. **拖饭喂食** —— 把饭碗拖到鲸鱼身上，它会张嘴吃掉并冒一句台词
+2. **点空碗续饭** —— 吃完留一个空碗，左键点一下自动盛满
+3. **干活敲键盘** —— agent 干活时鲸鱼敲键盘、露出手，吐司报当前工具名
+
+## 功能
+
+| # | 功能 | 效果 |
 |---|---|---|
-| ① | **喂白米饭** | 右下角一碗白米饭，拖到鲸鱼身上 → 缩进嘴里、张嘴咀嚼、冒一句台词；没拖中飞回原位。喂了多少碗记在 `localStorage.dshwv-feed-count`，台词里的 `N` 会替换成次数（台词写的是"已经吃了 N **碗**了"） |
-| ② | **饭碗循环** | 满碗喂掉后**留一个空碗**；**左键单击空碗**自动盛满，开始下一轮。空碗状态持久化在 `localStorage.dshwv-rice-empty`（刷新不会变回满碗），空碗不可拖动、鼠标变手型并轻微跳动提示可点 |
-| ③ | **BongoCat 式反应** | agent 干活时鲸鱼**敲键盘**并**露出两只手**；每次工具调用吐司报工具名（`🛠 read`）；工具失败变红抖动（`💥 pwsh 失败了`）；开工「🔧 开工！」、收工「✨ 干完啦～」并伸个懒腰 |
-| ④ | **饱食度** | 空闲 **−1%/分钟**、干活 **×5（−5%/分钟）**；喂一碗饭 **+5%**；**≤50%** 时每 30 秒主动喊一句饿话，每再降 10% 换一档（共 5 档，越饿越惨）。数值实时显示在**鲸鱼右上角的小气泡**里（饭碗下面、鱼头上面）：>50% 深蓝、≤50% 橙、≤20% 红并轻微跳动 |
+| ① | **喂白米饭** | 右下角一碗白米饭，拖到鲸鱼身上 → 缩进嘴里、张嘴咀嚼、冒一句台词；没拖中会飞回原位 |
+| ② | **饭碗循环** | 满碗喂掉后**留一个空碗**；**左键单击空碗**自动盛满，开始下一轮（刷新后仍保持空碗） |
+| ③ | **饱食度系统** | 空闲 **−1%/分钟**、干活 **×5（−5%/分钟）**；喂一碗饭 **+5%**。**≤50%** 时每 30 秒主动喊一句饿话，越饿说得越惨（5 档）。数值实时显示在**右上角小气泡**里：深蓝 = 正常、橙色 = 饿了、红色 = 快饿死了 |
+| ④ | **敲键盘反应** | agent 干活时鲸鱼**敲键盘**并**露出两只手**；每次工具调用吐司报工具名（`🛠 read`）；工具失败变红抖动（`💥 pwsh 失败了`）；开工「🔧 开工！」、收工「✨ 干完啦～」并伸个懒腰 |
 
-> 随机食物（🐟🍣🍙…）与「随机/米饭」模式切换已按需求**移除**，现在只有白米饭。
+## 安装
 
-## 饱食度细节
-
-- **数值**都在 `assets/satiety.mjs` 顶部：`IDLE_PER_MIN=1`、`WORK_MULTIPLIER=5`、`FEED_GAIN=5`、`HUNGRY_AT=50`、`TIER_SPAN=10`、`TIER_COUNT=5`、`FULL_AT=99.5`、`HUNGER_INTERVAL_MS=30000`、`HUNGER_TOAST_MS=3000`。
-- **节奏参考**（`test/satiety.mjs` 有断言）：一碗饭能撑 **5 分钟**不干活 / **1 分钟**干活；从满值饿到 0：空闲 **100 分钟** / 一直干活 **20 分钟**。嫌太快就改这两个常量。
-- **饿话**：`assets/hunger-lines.json`，**5 个数组对应 5 档**（第 1 档最轻）。≤50% 时**每 30 秒**说一句、吐司**停留 3 秒**；想加就加，F5 生效。
-- **相邻两句不重复**：饿话与喂饭台词都经 `pickFresh()` 选句，绝不会连着说同一句（跨池也不会有同一句，`test/satiety.mjs` 有断言守住）。事件类吐司（开工/工具名/失败/收工）是事实播报，不做去重。
-- **喂饭台词按语境分四档**（`assets/feed-lines.json`）：`starving`(≤20%，"救命饭"那种) / `hungry`(≤50%，"终于能吃上饭了") / `normal`(其余) / `full`(**≥80%** —— "再吃真的要变成大肥鱼了"只在这一档，不饿了就不该说这句)。判断用的是**吃之前**的饱食度（说"终于吃上"的是挨饿那一刻）。也兼容旧的扁平数组写法（会被当成 `normal`），改完 F5 生效。
-- **存档**：`localStorage['dshwv-satiety']` + `['dshwv-satiety-at']`。**页面关着的时间按空闲 −1%/分钟补扣**（离线时无法知道 agent 是否在跑，取保守档）；想改成"离线不扣"，删掉 `loadSatiety()` 里那次 `decay` 即可。
-- **太饱不吃**：≥99.5% 时拖过去只提示「已经吃得饱饱的」且**不消耗**这碗饭（不想要就删 `swallow()` 开头那段）。
-- 饭碗与气泡都锚在 `.dshwp-corner`（= 鲸鱼图那个 59.45% 方块），所以**鲸鱼缩放/移动时会一起跟随**；拖拽时 JS 把饭碗临时搬到 `body` 并改 `fixed`（躲开上游镜像造成的 transform 包含块问题），松手后放回容器。
-- **左吸附镜像**（上游给根元素加 `.dshwv-left`）时，吐司与气泡里的文字会自动翻正。
-
-## 怎么做到的（不碰本体）
-
-```
-浏览器                          宿主（dsh web）
-  plus.js  ──1.2s 轮询────────►  /dsh-whale-food-expack/activity.json   ← lib/index.js 折叠 agent 活动
-     │                           /dsh-whale-food-expack/plus.js|plus.css
-     │                           /dsh-whale-food-expack/rice-icon.svg|feed-lines.json
-     ├─ 找鲸鱼：window.__dshWhaleRoot，回退 .dshwv-root
-     ├─ 取鲸鱼图：根元素内**面积最大**的 img
-     └─ 叠加层（键盘/手/嘴/吐司）按这张图的包围盒定位
-```
-
-- **活动折叠**：宿主订阅 `session/event`、`agent/status`、`agent/error`（先试 `{ global: true }` 再退回无选项），
-  按 `turn/start` / `step/start` / `tool/call` / `tool/result` / `assistant/message` / `turn/end` 折叠；
-  `tool/result` **不带工具名**，用 `content[0].toolCallId` 反查；失败 = `content[0].isError === true || data.error !== undefined`；
-  并用 `ctx.get('agents')?.get(id)?.status` 做权威校准。
-- **前端**：按 `seq` 判定"有没有新事实"，避免同一状态反复触发；`document.hidden` 时跳过轮询；
-  声称在跑但 90s 没动静且没有工具在飞 → 当作收工（工具在飞时不判）。
-
-## 与 dsh-whale-skin-bridge 的关系
-
-食物元素同时挂了 `dshwv-food` 类，所以**装了桥接时**它会顺手获得两项好处：抬到鲸鱼之上（皮肤不会盖住它）、
-全屏时跟随搬进 `fullscreen` 元素。**没装桥接也完全可用**（自身样式已带层级）。
-
-## 怎么改
-
-- **前端改完 F5 即生效**：宿主每次请求都读盘 `assets/plus.js`、`assets/plus.css`。
-- **宿主改完要重启 `dsh web`**（ESM 已缓存）。
-
-### 调位置：Ctrl+Alt+M
-
-上游的立绘是**脸部特写**，所以原实现的几何（按全身立绘量的）不能直接用。按 **Ctrl+Alt+M** 进入调位置模式：
-
-- 嘴、键盘、左手、右手会出现**红色虚线框**，直接**拖动**它们到想要的位置；
-- 再按一次 **Ctrl+Alt+M**（或 Esc）结束 —— **松手即存**，位置保存在 `localStorage['dshwp-cal']`，刷新后仍生效。
-
-默认值（百分数，相对"鲸鱼图那个盒子"）：嘴 `54%,75%`、键盘 `35%,88%`、左手 `41%,81%`、右手 `55%,81%`。
-手填充 `#aabae0`（头发主色 `#566cad` 提亮）、描边 `#3f5598`；键盘深蓝 `#203170` + 浅色键条纹；吐司 left 50% / top 32%。
-
-- 台词在 `assets/feed-lines.json`（`N` = 喂食次数）。
-- 米饭贴图：`assets/rice-full.png`（可投喂）/ `assets/rice-empty.png`（空碗，点击续饭）；缺失时退回 `assets/rice-icon.svg`。
-- 只调嘴也可以：`localStorage['dshwp-mouth'] = 'left,top,width,height'`（百分数）再 F5。
-
-## 测试
+**前置条件**：先装好本体 —— 插件市场里的「**DSH 小鲸鱼记账挂件**」（包名 `dsh-whale-widget`，版本 **≥ 0.3.0**）。
+本插件只是它的附加层，**没有本体不会显示任何东西**。
 
 ```bash
-node test/host.mjs      # 20 项：注入幂等、折叠规则、失败判定、并行工具、FIFO 兜底、多会话、回收
+# 从 GitHub 安装（现在就能用）
+dsh plugin --profile web add github:Mynaniao/dsh-whale-food-expack
+
+# 从 npm / 插件市场安装（npm 发布后可用）
+dsh plugin --profile web add dsh-whale-food-expack
 ```
 
-不联网、不启动 DSH、不碰真实 `~/.dsh`。
-
-## 素材来源（重要）
-
-本插件的 CSS 几何、配色、台词、米饭 SVG、动画 keyframes **全部取自用户 2026-10 期间被插件市场
-"重装"操作误删的自建大肥鱼**，代码是从 DSH 会话日志（`.jsonl.zstd`，逐帧解压）里逐行复原出来的 ——
-详见工作区 `AGENTS.md` 与 `C:\Mao\DSH\_rebuild\RECOVERED\`。复原是跨版本按行号拼接的，
-所以这里只取了**能确认属于该功能**的部分（几何、配色、台词、SVG、keyframes），逻辑按当时的实现文档重写。
-
-## 安装 / 卸载
+装好后**重启 `dsh web`**（宿主半端在启动时加载），然后刷新页面。
 
 ```bash
-dsh plugin --profile web add "link:C:/Users/maoyi/.dsh/plugins/dsh-whale-food-expack"
-# 卸载
+# 卸载（本体不受影响，继续正常工作）
 dsh plugin --profile web remove dsh-whale-food-expack
 ```
 
-安装后**重启 `dsh web`**（宿主半端在启动时加载），再刷新页面。
+> ⚠️ 用插件市场"重装/更新"来升级**本地 `link:` 安装**的插件有风险（历史上曾因此丢失源码），升级请用 `remove` 再 `add`。
+
+## 用法
+
+- **喂饭**：把右下的饭碗拖到鲸鱼身上；没对准会自己飞回去。
+- **续饭**：空碗**左键**点一下盛满；空碗不能拖（鼠标会变成手型并轻微跳动提示）。
+- **调位置**：按 **`Ctrl+Alt+M`** 进入调整模式 → 嘴/键盘/左手/右手会出现红色虚线框，直接拖动；
+  再按一次 `Ctrl+Alt+M`（或 `Esc`）结束，**松手即存**。位置存在 `localStorage['dshwp-cal']`。
+  > 上游换立绘或你调了挂件大小导致错位时，用这个重新对齐即可。
+- **右键饭碗**会提示"现在只吃白米饭"（不会弹浏览器菜单）。
+
+## 配置与数据
+
+**饱食度数值**都在 `assets/satiety.mjs` 顶部，改完刷新页面即生效：
+
+| 常量 | 当前值 | 含义 |
+|---|---|---|
+| `IDLE_PER_MIN` | `1` | 空闲每分钟掉 1% |
+| `WORK_MULTIPLIER` | `5` | 干活时快 5 倍（即 5%/分钟） |
+| `FEED_GAIN` | `5` | 一碗饭 +5% |
+| `HUNGRY_AT` | `50` | ≤50% 开始喊饿 |
+| `TIER_SPAN` / `TIER_COUNT` | `10` / `5` | 每降 10% 换一档，共 5 档 |
+| `HUNGER_INTERVAL_MS` / `HUNGER_TOAST_MS` | `30000` / `3000` | 每 30 秒一句，吐司停留 3 秒 |
+
+**台词**都在 `assets/` 里，直接编辑、刷新即生效：
+
+- `hunger-lines.json` —— 5 档饿话（第 1 档最轻），相邻两句不重复
+- `feed-lines.json` —— 喂饭台词，按**吃之前**的状态分四档：`starving`(≤20%) / `hungry`(≤50%) / `normal` / `full`(≥80%)
+
+**数据与隐私** —— 全部只存在你自己的浏览器里，**本插件不向任何服务器发送数据**：
+
+| localStorage 键 | 存什么 | 想清零怎么办 |
+|---|---|---|
+| `dshwv-satiety` / `dshwv-satiety-at` | 当前饱食度 + 时间戳（用于离线补算） | 删除这两个键 → 回到 100% |
+| `dshwv-feed-count` | 累计喂了多少碗 | 删掉 |
+| `dshwv-rice-empty` | 饭碗是空是满 | 删掉（恢复满碗） |
+| `dshwp-cal` | 你调过的位置 | 删掉（恢复默认位置） |
+| `dshwp-mouth` | 只调嘴的简写覆盖：`'left,top,width,height'` | 删掉 |
+
+> 页面关着的时间按**空闲速率**补算（离线时无法知道 agent 在不在干活，取保守值）。
+> 想改成"离线不扣"，删掉 `assets/plus.js` 里 `loadSatiety()` 中的那次 `decay` 调用即可。
+
+## 常见问题
+
+**装了没反应？**
+先确认本体在不在（插件市场里的「DSH 小鲸鱼记账挂件」）。本插件只给本体加东西，没本体就什么都不显示。
+装完记得**重启 `dsh web`**，然后刷新页面。
+
+**叠加层错位了（嘴跑到额头、手飘在半空）？**
+上游换立绘或挂了别的皮肤插件时会发生。按 **`Ctrl+Alt+M`** 拖动对齐即可，松手自动保存。
+
+**想彻底关掉？**
+`dsh plugin --profile web remove dsh-whale-food-expack`，然后重启；本体继续正常工作。
+
+**为什么只有白米饭，没有小鱼干/寿司？**
+这一版只保留白米饭 —— 它和饱食度是一套的（一碗 +5%），加别的食物会让数值失去意义。
+
+**饿话不出现？**
+饱食度要**降到 50% 以下**才会开始说；而且**每分钟（30 秒）一句**，不是一直在说。想立刻看效果：
+控制台执行 `localStorage['dshwv-satiety']='45'; localStorage['dshwv-satiety-at']=Date.now()` 再刷新。
+
+**它会读取我的对话内容吗？**
+不读。宿主半端只订阅 agent 的**状态事件**（开工/收工/工具名/成败），不含对话内容；前端也只是把这些状态画成动画。
+
+## 开发与测试
+
+```bash
+npm test                 # = node test/host.mjs && node test/satiety.mjs
+node test/host.mjs       # 25 项：注入幂等、事件折叠、失败判定、并行工具、FIFO 兜底、静态资源解析
+node test/satiety.mjs    # 24 项：下降速率、喂食、档位、语境、相邻不重复、台词文件一致性
+```
+
+**49 条断言**，不联网、不启动 DSH、不碰真实 `~/.dsh`。CI 见 [`.github/workflows/test.yml`](.github/workflows/test.yml)（push / PR 自动跑）。
+
+- Node ≥ 20（仅开发与测试需要；装插件本身不需要）
+- 结构：宿主 `lib/index.js`（折叠 agent 活动成 `/dsh-whale-food-expack/activity.json`，并白名单式暴露 `assets/`）；
+  前端 `assets/plus.js` + `plus.css`（1.2 秒轮询，按 `seq` 判新事件）；纯逻辑抽在 `assets/satiety.mjs` 便于单测。
+
+## 许可与致谢
+
+- **本体**：「DSH 小鲸鱼记账挂件」由 [@MeteorNOX](https://github.com/MeteorNOX) 开发
+  （[DeepSeek-Balance-Whale-Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget)，MIT）。
+  **本插件与作者无隶属关系，也不是 DeepSeek 官方产品。**
+- **不含上游素材**：本插件不包含本体的任何代码或美术素材（图片 / 动图 / 音效），运行时只通过公开的
+  DOM 类名（`.dshwv-img` 等）对接；上游改版可能导致叠加层错位，用 `Ctrl+Alt+M` 重新对齐即可。
+- **本插件**：几何、配色、台词、米饭贴图与动画由本插件作者提供，按 **MIT** 授权分发，见 [LICENSE](LICENSE)。
+  其中一部分素材是从作者自己 2026-10 期间的 DSH 会话日志中逐行复原的（当时的自建版本被插件市场的一次
+  "重装"误删）。
