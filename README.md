@@ -16,11 +16,11 @@
 
 喂饭 + 干活敲键盘，同时进行：
 
-<img src="docs/demo-overview.webp" width="420" alt="喂饭与敲键盘同时进行">
+<img src="https://raw.githubusercontent.com/Mynaniao/dsh-whale-food-expack/main/docs/demo-overview.webp" width="420" alt="喂饭与敲键盘同时进行">
 
 | 不干活时：喂饭 | 干活时：敲键盘 |
 |---|---|
-| <img src="docs/demo-feed.webp" width="300" alt="拖饭喂食"> | <img src="docs/demo-typing.webp" width="300" alt="干活敲键盘"> |
+| <img src="https://raw.githubusercontent.com/Mynaniao/dsh-whale-food-expack/main/docs/demo-feed.webp" width="300" alt="拖饭喂食"> | <img src="https://raw.githubusercontent.com/Mynaniao/dsh-whale-food-expack/main/docs/demo-typing.webp" width="300" alt="干活敲键盘"> |
 
 - **喂饭**：把饭碗拖到鲸鱼身上 → 张嘴吃掉 → 冒一句台词；吃完留一个空碗，**左键点一下**自动盛满
 - **敲键盘**：agent 干活时鲸鱼敲键盘、露出手，吐司报当前工具名（`🛠 read`），失败时变红抖动
