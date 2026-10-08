@@ -1,5 +1,5 @@
 /**
- * dsh-whale-food-expansionpack 宿主半端自测：不启动 DSH、不联网、不碰真实 ~/.dsh。
+ * dsh-whale-food-expack 宿主半端自测：不启动 DSH、不联网、不碰真实 ~/.dsh。
  * 跑法：node test/host.mjs
  */
 import assert from 'node:assert/strict';
@@ -14,7 +14,7 @@ function check(title, fn) {
 
 // ---------- 元数据 ----------
 groups.push('导出与 patch 行一致');
-check('name 与 cordis.patch.yml 的行 id 一致', () => assert.equal(name, 'dsh-whale-food-expansionpack'));
+check('name 与 cordis.patch.yml 的行 id 一致', () => assert.equal(name, 'dsh-whale-food-expack'));
 check('inject 只要 webServer', () => assert.deepEqual(inject, ['webServer']));
 
 // ---------- index 注入 ----------
@@ -23,8 +23,8 @@ check('样式进 head、脚本进 body 且是 module', () => {
   const html = injectPlus('<html><head><title>x</title></head><body><div id="root"></div></body></html>');
   const head = html.indexOf('</head>');
   const body = html.indexOf('</body>');
-  assert.ok(html.indexOf('/dsh-whale-food-expansionpack/plus.css') < head, 'style 应在 </head> 之前');
-  assert.ok(html.indexOf('/dsh-whale-food-expansionpack/plus.js') > head && html.indexOf('/dsh-whale-food-expansionpack/plus.js') < body, 'script 应在 body 内');
+  assert.ok(html.indexOf('/dsh-whale-food-expack/plus.css') < head, 'style 应在 </head> 之前');
+  assert.ok(html.indexOf('/dsh-whale-food-expack/plus.js') > head && html.indexOf('/dsh-whale-food-expack/plus.js') < body, 'script 应在 body 内');
   assert.ok(/<script [^>]*type="module"/.test(html), 'script 必须是 type="module"（plus.js 里 import ./satiety.mjs）');
 });
 check('幂等：二次注入不叠加', () => {
@@ -164,26 +164,26 @@ check('长期无动静的会话被回收', () => {
 // ---------- 静态资源解析 ----------
 groups.push('静态资源解析');
 check('已知资产：路径、MIME 与缓存策略', () => {
-  const js = resolveAsset('/dsh-whale-food-expansionpack/plus.js');
+  const js = resolveAsset('/dsh-whale-food-expack/plus.js');
   assert.equal(js.type, 'text/javascript; charset=utf-8');
   assert.equal(js.cache, 'no-store', 'JS 必须不缓存，前端才能热更');
   assert.ok(js.file.endsWith('plus.js'));
-  const rice = resolveAsset('/dsh-whale-food-expansionpack/rice-full.png');
+  const rice = resolveAsset('/dsh-whale-food-expack/rice-full.png');
   assert.equal(rice.type, 'image/png');
   assert.equal(rice.cache, 'public, max-age=31536000, immutable', '贴图应长缓存（饭碗有 1.1 MB）');
-  assert.equal(resolveAsset('/dsh-whale-food-expansionpack/rice-empty.png').type, 'image/png');
-  assert.equal(resolveAsset('/dsh-whale-food-expansionpack/feed-lines.json').type, 'application/json; charset=utf-8');
+  assert.equal(resolveAsset('/dsh-whale-food-expack/rice-empty.png').type, 'image/png');
+  assert.equal(resolveAsset('/dsh-whale-food-expack/feed-lines.json').type, 'application/json; charset=utf-8');
 });
 check('拒绝目录穿越、未知扩展名与越界前缀', () => {
-  assert.equal(resolveAsset('/dsh-whale-food-expansionpack/../lib/index.js'), null);
-  assert.equal(resolveAsset('/dsh-whale-food-expansionpack/..%2F..%2Fpackage.json'), null);
-  assert.equal(resolveAsset('/dsh-whale-food-expansionpack/secret.txt'), null);
+  assert.equal(resolveAsset('/dsh-whale-food-expack/../lib/index.js'), null);
+  assert.equal(resolveAsset('/dsh-whale-food-expack/..%2F..%2Fpackage.json'), null);
+  assert.equal(resolveAsset('/dsh-whale-food-expack/secret.txt'), null);
   assert.equal(resolveAsset('/other/plus.js'), null);
-  assert.equal(resolveAsset('/dsh-whale-food-expansionpack/'), null);
+  assert.equal(resolveAsset('/dsh-whale-food-expack/'), null);
   assert.equal(resolveAsset(null), null);
 });
 check('子目录允许，但结果必须仍在 assets 之内', () => {
-  const nested = resolveAsset('/dsh-whale-food-expansionpack/rice/full.png');
+  const nested = resolveAsset('/dsh-whale-food-expack/rice/full.png');
   assert.ok(nested && nested.file.includes('assets'), '解析结果应位于 assets 目录下');
   assert.equal(nested.type, 'image/png');
 });

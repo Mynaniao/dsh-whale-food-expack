@@ -1,11 +1,11 @@
 /**
- * dsh-whale-food-expansionpack — 客户端（浏览器）半端。
+ * dsh-whale-food-expack — 客户端（浏览器）半端。
  *
  * 叠加在插件市场的大肥鱼（dsh-whale-widget）之上，实现用户原来的三次改动：
  *   ① 喂食：把白米饭拖到鲸鱼身上 → 吃进嘴里（嘴部动画 + 咀嚼抖动 + 一句台词）
  *   ② 饭碗循环：满碗喂掉后留**空碗**，左键单击空碗自动盛满，开始下一轮（状态持久化）
  *   ③ BongoCat 式反应：干活时敲键盘 + 露手，每次工具调用报工具名，
- *      工具失败抖动，收工伸懒腰（数据来自 /dsh-whale-food-expansionpack/activity.json，1.2s 轮询）
+ *      工具失败抖动，收工伸懒腰（数据来自 /dsh-whale-food-expack/activity.json，1.2s 轮询）
  *
  *   ④ 饱食度：空闲 -1%/分钟、干活 ×5（-5%/分钟）；一碗饭 +5%；
  *      ≤50% 时每分钟主动喊一句饿话，每再降 10% 换一档（共 5 档）
@@ -21,12 +21,12 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
   if (window.__dshWhalePlus) return;
   window.__dshWhalePlus = true;
 
-  var PREFIX = '/dsh-whale-food-expansionpack';
+  var PREFIX = '/dsh-whale-food-expack';
   var RICE_SVG = '';
   /**
    * 喂饭台词，按"吃之前"的饱食度分四种语境：
    *   starving ≤20% / hungry ≤50% / normal 其余 / full ≥80%（"再吃要变成大肥鱼"只在这档）。
-   * 由 /dsh-whale-food-expansionpack/feed-lines.json 覆盖（也兼容旧的扁平数组，会当成 normal）。
+   * 由 /dsh-whale-food-expack/feed-lines.json 覆盖（也兼容旧的扁平数组，会当成 normal）。
    */
   var FEED_LINES = {
     starving: ['终于…终于能吃上饭了！', '救命的饭！我不客气了！'],
@@ -34,7 +34,7 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     normal: ['啊呜~ 好吃！', '吧唧吧唧…真香！', '已经吃了 N 碗了，我是真能吃！'],
     full: ['再吃真的要变成大肥鱼了！', '嗝~ 已经饱到冒泡泡了…'],
   };
-  /** 5 档饿话，从轻到重（由 /dsh-whale-food-expansionpack/hunger-lines.json 覆盖）。 */
+  /** 5 档饿话，从轻到重（由 /dsh-whale-food-expack/hunger-lines.json 覆盖）。 */
   var HUNGER_LINES = [['有点饿了…'], ['真的饿了…'], ['饿得不行了…'], ['快饿死了…'], ['饿…说不出话了…']];
   var KEY_COUNT = 'dshwv-feed-count';
   var KEY_SAT = 'dshwv-satiety';
