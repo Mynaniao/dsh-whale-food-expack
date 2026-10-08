@@ -5,10 +5,11 @@
 > **不修改本体一个字节** · 纯本机运行 · **不向任何服务器发送数据** · 非官方项目
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/dsh-whale-food-expack.svg)](https://www.npmjs.com/package/dsh-whale-food-expack)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](#开发与测试)
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 
-当前版本 **1.0.0** · 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
+当前版本 **1.0.0**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
 
 ---
 
@@ -42,11 +43,11 @@
 本插件只是它的附加层，**没有本体不会显示任何东西**。
 
 ```bash
-# 从 GitHub 安装（现在就能用）
-dsh plugin --profile web add github:Mynaniao/dsh-whale-food-expack
-
-# 从 npm / 插件市场安装（npm 发布后可用）
+# 从 npm / 插件市场安装（推荐，已发布 v1.0.0）
 dsh plugin --profile web add dsh-whale-food-expack
+
+# 或者直接从 GitHub 安装（国内网络下往往更快）
+dsh plugin --profile web add github:Mynaniao/dsh-whale-food-expack
 ```
 
 装好后**重启 `dsh web`**（宿主半端在启动时加载），然后刷新页面。
