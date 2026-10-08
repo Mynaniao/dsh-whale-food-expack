@@ -24,8 +24,8 @@ function check(title, fn) {
 
 groups.push('规格常量');
 check('数值与需求一致：-1%/分钟、干活 ×3、一碗 +5%、50% 起饿、每 10% 一档、共 5 档', () => {
-  assert.equal(IDLE_PER_MIN, 2);
-  assert.equal(WORK_MULTIPLIER, 5);
+  assert.equal(IDLE_PER_MIN, 1);
+  assert.equal(WORK_MULTIPLIER, 3);
   assert.equal(FEED_GAIN, 5);
   assert.equal(HUNGRY_AT, 50);
   assert.equal(TIER_SPAN, 10);
