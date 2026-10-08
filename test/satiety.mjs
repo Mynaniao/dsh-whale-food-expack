@@ -23,9 +23,9 @@ function check(title, fn) {
 }
 
 groups.push('规格常量');
-check('数值与需求一致：-1%/分钟、干活 ×3、一碗 +5%、50% 起饿、每 10% 一档、共 5 档', () => {
+check('数值与需求一致：-1%/分钟、干活 ×5、一碗 +5%、50% 起饿、每 10% 一档、共 5 档', () => {
   assert.equal(IDLE_PER_MIN, 1);
-  assert.equal(WORK_MULTIPLIER, 3);
+  assert.equal(WORK_MULTIPLIER, 5);
   assert.equal(FEED_GAIN, 5);
   assert.equal(HUNGRY_AT, 50);
   assert.equal(TIER_SPAN, 10);
@@ -38,13 +38,13 @@ check('饿话频率 30 秒、停留 3 秒', () => {
 });
 
 groups.push('下降速度');
-check('空闲 1%/分钟，干活 3%/分钟', () => {
+check('空闲 1%/分钟，干活 5%/分钟', () => {
   assert.equal(decayRate(false), 1);
-  assert.equal(decayRate(true), 3);
+  assert.equal(decayRate(true), 5);
 });
-check('满值放 1 分钟：空闲 → 99，干活 → 97', () => {
+check('满值放 1 分钟：空闲 → 99，干活 → 95', () => {
   assert.equal(decay(100, 1, false), 99);
-  assert.equal(decay(100, 1, true), 97);
+  assert.equal(decay(100, 1, true), 95);
 });
 check('干活 5 倍速确实等于空闲的 5 倍消耗', () => {
   const idle = 100 - decay(100, 3, false);
@@ -155,13 +155,13 @@ check('饿话与喂饭台词没有交叉重复（避免刚喊完饿就重复同�
 });
 
 groups.push('经济性（让用户看清这套数值的节奏）');
-check('一碗饭能撑：空闲 5 分钟 / 干活 100 秒', () => {
+check('一碗饭能撑：空闲 5 分钟 / 干活 1 分钟', () => {
   assert.equal(FEED_GAIN / decayRate(false), 5);
-  assert.equal(FEED_GAIN / decayRate(true), 5 / 3);
+  assert.equal(FEED_GAIN / decayRate(true), 1);
 });
-check('从满值饿到 0：空闲 100 分钟 / 一直干活约 33 分钟', () => {
+check('从满值饿到 0：空闲 100 分钟 / 一直干活 20 分钟', () => {
   assert.equal(100 / decayRate(false), 100);
-  assert.equal(100 / decayRate(true), 100 / 3);
+  assert.equal(100 / decayRate(true), 20);
 });
 
 console.log(`\nok — ${groups.length} 组断言 / ${passed} 项检查全部通过`);
