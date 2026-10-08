@@ -1,4 +1,4 @@
-# dsh-whale-plus
+# dsh-whale-food-expansionpack
 
 给**插件市场安装的大肥鱼**（`dsh-whale-widget`）叠加三项改动的附加插件。本体一个字节都不改，
 所以上游更新照常：`dsh plugin --profile web update dsh-whale-widget` 之后附加功能继续生效。
@@ -30,9 +30,9 @@
 
 ```
 浏览器                          宿主（dsh web）
-  plus.js  ──1.2s 轮询────────►  /dsh-whale-plus/activity.json   ← lib/index.js 折叠 agent 活动
-     │                           /dsh-whale-plus/plus.js|plus.css
-     │                           /dsh-whale-plus/rice-icon.svg|feed-lines.json
+  plus.js  ──1.2s 轮询────────►  /dsh-whale-food-expansionpack/activity.json   ← lib/index.js 折叠 agent 活动
+     │                           /dsh-whale-food-expansionpack/plus.js|plus.css
+     │                           /dsh-whale-food-expansionpack/rice-icon.svg|feed-lines.json
      ├─ 找鲸鱼：window.__dshWhaleRoot，回退 .dshwv-root
      ├─ 取鲸鱼图：根元素内**面积最大**的 img
      └─ 叠加层（键盘/手/嘴/吐司）按这张图的包围盒定位
@@ -87,9 +87,9 @@ node test/host.mjs      # 20 项：注入幂等、折叠规则、失败判定、
 ## 安装 / 卸载
 
 ```bash
-dsh plugin --profile web add "link:C:/Users/maoyi/.dsh/plugins/dsh-whale-plus"
+dsh plugin --profile web add "link:C:/Users/maoyi/.dsh/plugins/dsh-whale-food-expansionpack"
 # 卸载
-dsh plugin --profile web remove dsh-whale-plus
+dsh plugin --profile web remove dsh-whale-food-expansionpack
 ```
 
 安装后**重启 `dsh web`**（宿主半端在启动时加载），再刷新页面。
