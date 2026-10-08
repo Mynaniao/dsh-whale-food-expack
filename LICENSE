@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-补充声明（第三方与商标）：
-
-- 本插件是社区作品，**不是 DeepSeek 官方产品**，也与 `dsh-whale-widget`
-  的原作者（MeteorNOX / DeepSeek-Balance-Whale-Widget）**没有隶属关系**。
-- 本插件**不包含** `dsh-whale-widget` 的任何代码或美术素材（图片 / 动图 / 音效）；
-  运行时依赖用户自行从插件市场安装的该插件，二者以公开的 DOM 类名（`.dshwv-img`
-  等）对接。
-- 本插件自带的图片素材（`assets/rice-full.png`、`assets/rice-empty.png`、
-  `assets/rice-icon.svg`）由本插件作者提供，随本插件按 MIT 授权分发。
-- 素材中的角色形象与商标归各自权利人所有；如权利人提出异议，我们会立即替换或移除。
