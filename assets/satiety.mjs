@@ -2,8 +2,8 @@
  * 饱食度：纯逻辑，不碰 DOM / localStorage，所以能在 Node 里单测（test/satiety.mjs）。
  *
  * 规则（用户 2026-10-07 定）：
- *   - 空闲：每分钟 -2%
- *   - agent 干活时：速度 ×5（即 -10%/分钟）
+ *   - 空闲：每分钟 -1%
+ *   - agent 干活时：速度 ×3（即 -3%/分钟）
  *   - 喂一碗白米饭：+5%
  *   - ≤50% 就开始主动喊饿，**每 30 秒一句**、吐司停留 **3 秒**；每再降 10% 换一档，共 5 档
  *   - 喂饭的台词也分语境（starving / hungry / normal / full），见 feedTier()
@@ -11,9 +11,9 @@
  */
 
 /** 空闲时的下降速度（百分点/分钟）。 */
-export const IDLE_PER_MIN = 2;
+export const IDLE_PER_MIN = 1;
 /** agent 干活时的倍率。 */
-export const WORK_MULTIPLIER = 5;
+export const WORK_MULTIPLIER = 3;
 /** 一碗米饭的饱食度增量（百分点）。 */
 export const FEED_GAIN = 5;
 /** 低于等于这个值就开始喊饿。 */
@@ -40,7 +40,7 @@ export const FED_STARVING_AT = 20;
 /** 夹在 0~100。 */
 export const clamp = (v) => Math.max(0, Math.min(100, v));
 
-/** 当前每分钟下降多少（干活 ×5）。 */
+/** 当前每分钟下降多少（干活 ×3）。 */
 export const decayRate = (working) => IDLE_PER_MIN * (working ? WORK_MULTIPLIER : 1);
 
 /**

@@ -7,7 +7,7 @@
  *   ③ BongoCat 式反应：干活时敲键盘 + 露手，每次工具调用报工具名，
  *      工具失败抖动，收工伸懒腰（数据来自 /dsh-whale-food-expansionpack/activity.json，1.2s 轮询）
  *
- *   ④ 饱食度：空闲 -2%/分钟、干活 ×5（-10%/分钟）；一碗饭 +5%；
+ *   ④ 饱食度：空闲 -1%/分钟、干活 ×3（-3%/分钟）；一碗饭 +5%；
  *      ≤50% 时每分钟主动喊一句饿话，每再降 10% 换一档（共 5 档）
  *
  * 不假设上游 DOM：鲸鱼根元素用 `window.__dshWhaleRoot`，拿不到再退回 `.dshwv-root`；
@@ -55,13 +55,13 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
   var satLastShown = -1;      // 上次渲染的整数百分比（避免每秒刷 DOM）
   var hungerLastAt = 0;       // 上次喊饿的时间；0 = 还没喊过 → 刚饿下来会立刻喊一句
   var lastHungerLine = '';    // 上一句饿话（相邻两句不重复）
-  var workRunning = false;    // agent 是否在干活（决定是否 ×5 消耗）
+  var workRunning = false;    // agent 是否在干活（决定是否 ×3 消耗）
   var satBubble = null;       // 饱食度气泡
   var satText = null;         // 气泡里的文字（镜像时只翻这层）
   var corner = null;          // 饭碗 + 气泡的锚定容器（与鲸鱼图同盒 → 随鲸鱼缩放/移动）
 
   /**
-   * 读存档。页面关着的那段时间按"不工作"扣（2%/分钟）—— 挂件只在页面开着时才存在，
+   * 读存档。页面关着的那段时间按"不工作"扣（1%/分钟）—— 挂件只在页面开着时才存在，
    * 所以离线期间没法知道 agent 是否在跑，取保守的那档。
    */
   function loadSatiety() {
@@ -536,7 +536,7 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     if (state.running && !state.toolRunning && state.at && Date.now() - state.at > 90000) state.stale = true;
 
     var running = state.running && !state.stale;
-    workRunning = running;   // 饱食度消耗倍率看这个（干活 ×5）
+    workRunning = running;   // 饱食度消耗倍率看这个（干活 ×3）
     if (running !== prev.running || (fresh && running !== prev.running)) setTyping(running);
 
     if (fresh && running && !prev.running) showToast('🔧 开工！', 'done', 1600);
