@@ -215,6 +215,79 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     root.appendChild(corner);
   }
 
+
+  // ---------- 图层与界面皮肤兼容 ----------
+  // 为什么需要（2026-10-09 实测，见 README「与界面皮肤/全屏共存」）：
+  //   · 上游立绘 .dshwv-img 是 z-index:1，根元素 .dshwv-root 是 z-index:9999；
+  //   · 我们的饭碗没有 z-index → 被压在鱼下面（CS S里已补 10050）；
+  //   · 饭碗拖拽时会被搬到 body，此刻与根元素同层，必须 > 9999 才看得见；
+  //   · 宿主界面皮肤（如 dsh-macos-skin 的 #dsh-desktop）会插一个 z-index 2147483000 的全屏层，
+  //     这时 10050 也不够 —— 需要把鲸鱼根元素与我们的叠加层一起抬到皮肤之上。
+  //   策略：**只在检测到皮肤时才接管层级**；没有皮肤时一行都不动上游自己的动态 z-index。
+  var BASE_FOOD_Z = 10050;          // 无皮肤：> 根元素 9999、菜单 10000、列表 10001
+  var SKIN_ROOT_Z = 2147483100;     // 有皮肤：> 皮肤层 2147483000
+  var SKIN_FOOD_Z = 2147483105;     // 饭碗再高一点（与 dsh-whale-skin-bridge 取值一致，共存不打架）
+  var SKIN_HINT_ID = 'dsh-desktop'; // 已知皮肤层 id；下面还有按几何特征做的通用兜底
+  var skinOn = null;
+  var skinScanCount = 0;
+
+  function isSkinLike(el) {
+    if (!el || el === root || el === document.body) return false;
+    if (root && el.contains(root)) return false;              // 鲸鱼自己或它的祖先不算
+    var cs;
+    try { cs = getComputedStyle(el); } catch (e) { return false; }
+    if (!cs || cs.position !== 'fixed') return false;
+    var z = parseInt(cs.zIndex, 10);
+    if (!(z >= 1000000)) return false;                        // 皮肤层都是天文数字
+    var r = el.getBoundingClientRect();
+    return r.width >= (window.innerWidth || 0) * 0.9;         // 并且基本铺满屏幕
+  }
+
+  /** 找宿主界面皮肤的全屏层级；没有则返回 null。 */
+  function findSkinLayer() {
+    var hint = document.getElementById(SKIN_HINT_ID);
+    if (hint && isSkinLike(hint)) return hint;
+    if (skinScanCount++ % 5 !== 0) return null;               // 通用扫描降到每 5 次一轮，别每 3 秒全扫
+    var kids = document.body ? document.body.children : [];
+    for (var i = 0; i < kids.length; i++) { if (isSkinLike(kids[i])) return kids[i]; }
+    return null;
+  }
+
+  function setZ(el, v) { try { el.style.setProperty('z-index', String(v), 'important'); } catch (e) { el.style.zIndex = String(v); } }
+  function clearZ(el) { try { el.style.removeProperty('z-index'); } catch (e) { el.style.zIndex = ''; } }
+
+  /** 把根元素与饭碗同步到正确层级（皮肤出现/消失时各自动一次）。 */
+  function syncLayers(force) {
+    var on = !!findSkinLayer();
+    var changed = force === true || on !== skinOn;
+    skinOn = on;
+    if (!changed) return;
+    if (root) { if (on) setZ(root, SKIN_ROOT_Z); else clearZ(root); }
+    if (food) setZ(food, on ? SKIN_FOOD_Z : BASE_FOOD_Z);
+  }
+
+  // ---------- 全屏兼容 ----------
+  // 皮肤（或任何元素）进入 fullscreen 后会进 CSS top layer —— 层级再高也压不过它，
+  // body 里的鲸鱼必被盖住。做法：把根元素搬进 fullscreen 元素，退出时搬回原位。
+  // （dsh-whale-skin-bridge 也是这么干的；两个插件同时装只是搬到同一个地方。）
+  var homeParent = null;
+  function syncFullscreen() {
+    if (!root) return;
+    var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl) {
+      if (!homeParent) homeParent = root.parentNode;
+      if (root.parentNode !== fsEl) fsEl.appendChild(root);
+      setZ(root, SKIN_ROOT_Z);                                 // 全屏内也要压过皮肤内容
+    } else if (homeParent) {
+      if (root.parentNode !== homeParent) homeParent.appendChild(root);
+      homeParent = null;
+      syncLayers(true);                                        // 退出后按"有没有皮肤"重新决定
+    }
+  }
+  document.addEventListener('fullscreenchange', syncFullscreen);
+  document.addEventListener('webkitfullscreenchange', syncFullscreen);
+
+
   // ---------- 调位置（Ctrl+Alt+M：拖动虚线框，松手即存）----------
   var CAL_KEY = 'dshwp-cal';
   /** 存盘版本号：改了默认几何就 +1，旧存档自动失效（否则你永远看不到新默认值）。 */
@@ -368,6 +441,7 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
       }
     });
     renderFood();
+    syncLayers(true);          // 饭碗是拖拽时会被搬到 body 的元素，层级必须明确
   }
 
   function onFoodDown(e) {
@@ -568,6 +642,8 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     buildOverlay();
     buildFood();
     applyCal();
+    syncLayers(true);          // 启动就先判定一次皮肤
+    syncFullscreen();
     calParts().forEach(function (p) { makeDraggable(p[0], p[1], p[2]); });
     document.addEventListener('keydown', function (e) {
       if (e.ctrlKey && e.altKey && String(e.key).toLowerCase() === 'm') { e.preventDefault(); toggleCal(); }
@@ -578,6 +654,7 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     poll();
     setInterval(poll, 1200);
     setInterval(tickSatiety, 1000);
+    setInterval(function () { syncLayers(); syncFullscreen(); }, 3000);   // 皮肤被打开/关闭、进/退全屏
     // 关页面 / 切后台时把饱食度和时间戳落盘（下次打开按离线时长扣）
     document.addEventListener('visibilitychange', function () { if (document.hidden) saveSatiety(); });
     window.addEventListener('beforeunload', saveSatiety);

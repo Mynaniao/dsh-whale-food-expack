@@ -45,12 +45,18 @@
   -webkit-user-drag: none;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .25));
   pointer-events: auto;
+  /* 必须压过鲸鱼本体：上游 .dshwv-img 是 z-index:1，根元素 .dshwv-root 是 z-index:9999。
+     饭碗拖拽时会被搬到 body、与根元素同层，所以这里直接取一个高过 9999 的值；
+     装了界面皮肤时再由 JS 抬到 2147483105（见 plus.js 的「图层与界面皮肤兼容」段）。 */
+  z-index: 10050;
   transition: left .3s ease, top .3s ease, width .25s ease, height .25s ease, opacity .25s ease;
 }
 
 /* ---------- 饱食度气泡（饭碗下面、鱼头上面） ---------- */
 .dshwp-sat {
   position: absolute;
+  /* 显式层级：虽然靠 .dshwp-corner(6) 已经压过鲸鱼图的 1，但别依赖"DOM 顺序"这种巧合 */
+  z-index: 7;
   left: 68%;
   top: -10%;
   width: 24%;

@@ -106,15 +106,36 @@ dsh plugin --profile web remove dsh-whale-food-expack
 **它会读取我的对话内容吗？**
 不读。宿主半端只订阅 agent 的**状态事件**（开工/收工/工具名/成败），不含对话内容；前端也只是把这些状态画成动画。
 
+## 与界面皮肤 / 全屏共存（兼容补丁）
+
+DSH 的界面皮肤（例如 `dsh-macos-skin`）会插入一个 `position: fixed` 的全屏层（`#dsh-desktop`，`z-index: 2147483000`），
+比鲸鱼本体（`.dshwv-root`，`z-index: 9999`）高得多 —— 皮肤一开，鲸鱼和它的饭碗都会被盖住；
+皮肤那个绿色按钮还走**真 Fullscreen API**：该层进入浏览器 top layer，任何 z-index 都压不过它。
+
+本插件自带一层**小而克制的兼容补丁**（**不需要**再额外装桥接插件）：
+
+| 场景 | 插件怎么做 |
+|---|---|
+| 没有皮肤 | 饭碗取 `z-index: 10050`（压过鲸鱼图的 `1`、根元素的 `9999`、上游菜单的 `10000/10001`）；**完全不碰**上游自己的动态层级 |
+| 检测到皮肤 | 把鲸鱼根元素与饭碗抬到 `2147483100 / 2147483105`（压过皮肤层 `2147483000`）；皮肤消失后**还原**，交回上游 |
+| 进入全屏 | 把鲸鱼根元素搬进 `document.fullscreenElement`，退出时搬回原处 |
+| 如何判定"皮肤" | 先看已知 id `#dsh-desktop`，再按几何特征兜底：`position: fixed` + `z-index ≥ 1000000` + 宽度 ≥ 视口 90% |
+
+- 判定与同步跑在 **3 秒一次的巡检**里（皮肤开/关、进/退全屏都会自动跟随），启动时先执行一次。
+- 与 `dsh-whale-skin-bridge` 共存**不冲突**：取值一致，两者都只是"把同一批元素抬到同一层"。
+- 饭碗**故意不带** `dshwv-food` 类 —— 桥接会在全屏时把 `.dshwv-food` 单独搬进 fullscreen 元素，那样饭碗会脱离锚点容器跑偏。
+- 回归测试见 `test/layers.mjs`（7 组 / 29 项）：守住「**饭碗必须压过鲸鱼**」这条线，以及上面这些约定。
+
 ## 开发与测试
 
 ```bash
-npm test                 # = node test/host.mjs && node test/satiety.mjs
+npm test                 # = node test/host.mjs && node test/satiety.mjs && node test/layers.mjs
 node test/host.mjs       # 25 项：注入幂等、事件折叠、失败判定、并行工具、FIFO 兜底、静态资源解析
 node test/satiety.mjs    # 24 项：下降速率、喂食、档位、语境、相邻不重复、台词文件一致性
+node test/layers.mjs     # 29 项：饭碗必须压过鲸鱼；皮肤/全屏兼容补丁的常量与挂接；饭碗不挂 dshwv-food
 ```
 
-**49 条断言**，不联网、不启动 DSH、不碰真实 `~/.dsh`。CI 见 [`.github/workflows/test.yml`](.github/workflows/test.yml)（push / PR 自动跑）。
+**78 条断言**，不联网、不启动 DSH、不碰真实 `~/.dsh`。CI 见 [`.github/workflows/test.yml`](.github/workflows/test.yml)（push / PR 自动跑）。
 
 - Node ≥ 20（仅开发与测试需要；装插件本身不需要）
 - 结构：宿主 `lib/index.js`（折叠 agent 活动成 `/dsh-whale-food-expack/activity.json`，并白名单式暴露 `assets/`）；
