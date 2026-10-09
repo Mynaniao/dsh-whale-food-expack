@@ -10,7 +10,7 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](#开发与测试)
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 
-当前版本 **1.0.1**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
+当前版本 **1.1.1**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
 
 ---
 
@@ -42,7 +42,7 @@
 本插件只是它的附加层，**没有本体不会显示任何东西**。
 
 ```bash
-# 从 npm / 插件市场安装（推荐，已发布 v1.0.1）
+# 从 npm / 插件市场安装（推荐，已发布 v1.1.1）
 dsh plugin --profile web add dsh-whale-food-expack
 
 # 或者直接从 GitHub 安装
