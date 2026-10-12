@@ -263,6 +263,42 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
   function setZ(el, v) { try { el.style.setProperty('z-index', String(v), 'important'); } catch (e) { el.style.zIndex = String(v); } }
   function clearZ(el) { try { el.style.removeProperty('z-index'); } catch (e) { el.style.zIndex = ''; } }
 
+
+  // ---------- 皮肤共存层（原 dsh-whale-skin-bridge 的职责，2026-10-13 并入）----------
+  // 装 dsh-macos-skin 这类皮肤时会插入 z-index 2147483000 的不透明全屏壁纸。
+  // 光抬我们自己还不够：DSH 应用把自己的对话框/菜单/提示 portal 到 <body>，
+  // 而且**完全没有 z-index**（@deepseek-ai/dsh-client-ui-primitives 只给 position:fixed），
+  // 于是"设置点不开、弹窗看不见"—— 但点击其实是生效的，只是画在壁纸底下。
+  // 规则取值照抄 dsh-whale-skin-bridge（已实战验证）：
+  //   皮肤壁纸 2147483000 < 鲸鱼 2147483100 < 饭碗/菜单 < 应用层 2147483200 < 皮肤自己的弹窗 2147483300+
+  var COMPAT_STYLE_ID = 'dshwp-skin-compat';
+  var COMPAT_CSS = [
+    '.dshwv-menu { z-index: 2147483110 !important; }',
+    'body > *:not(#dsh-desktop):not(.dshwv-root):not(.dshwv-menu):not(.dshwv-food)'
+      + ':not(script):not(style):not(link):not(#dshwp-skin-compat)'
+      + ' { z-index: 2147483200 !important; }',
+  ].join('\n');
+
+  /** 用户自救开关：localStorage['dshwp-compat']==='0' 时完全不注入兼容层。 */
+  function compatEnabled() {
+    try { return load('dshwp-compat', '1') !== '0'; } catch (e) { return true; }
+  }
+
+  /** 需要时注入兼容样式，皮肤消失时移除（幂等）。 */
+  function ensureCompatStyle(on) {
+    var el = document.getElementById(COMPAT_STYLE_ID);
+    if (on && compatEnabled()) {
+      if (!el) {
+        el = document.createElement('style');
+        el.id = COMPAT_STYLE_ID;
+        el.textContent = COMPAT_CSS;
+        (document.head || document.documentElement).appendChild(el);
+      }
+    } else if (el && el.parentNode) {
+      el.parentNode.removeChild(el);
+    }
+  }
+
   /** 把根元素与饭碗同步到正确层级（皮肤出现/消失时各自动一次）。 */
   function syncLayers(force) {
     var on = !!findSkinLayer();
@@ -271,6 +307,8 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     if (!changed) return;
     if (root) { if (on) setZ(root, SKIN_ROOT_Z); else clearZ(root); }
     if (food) setZ(food, on ? SKIN_FOOD_Z : BASE_FOOD_Z);
+    // 皮肤在时：顺手救回被壁纸盖住的应用对话框/菜单（原 bridge 的 Rule 2）
+    ensureCompatStyle(on);
   }
 
   // ---------- 全屏兼容 ----------
@@ -284,6 +322,9 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     if (fsEl) {
       if (!homeParent) homeParent = root.parentNode;
       if (root.parentNode !== fsEl) fsEl.appendChild(root);
+      // 右键菜单是 body 的兄弟节点，不一起搬走会在全屏里消失（bridge 同样处理）
+      var menu = document.querySelector('.dshwv-menu');
+      if (menu && menu.parentNode !== fsEl) fsEl.appendChild(menu);
       setZ(root, SKIN_ROOT_Z);                                 // 全屏内也要压过皮肤内容
     } else if (homeParent) {
       if (root.parentNode !== homeParent) homeParent.appendChild(root);

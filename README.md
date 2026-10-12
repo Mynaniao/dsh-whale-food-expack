@@ -10,7 +10,7 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](#开发与测试)
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 
-当前版本 **1.2.0**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
+当前版本 **1.3.0**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
 
 ---
 
@@ -137,23 +137,33 @@ DSH 桌面端（Electron）的 `index.html` 由安装包的**静态 dist 直出*
 
 ## 与界面皮肤 / 全屏共存（兼容补丁）
 
-DSH 的界面皮肤（例如 `dsh-macos-skin`）会插入一个 `position: fixed` 的全屏层（`#dsh-desktop`，`z-index: 2147483000`），
-比鲸鱼本体（`.dshwv-root`，`z-index: 9999`）高得多 —— 皮肤一开，鲸鱼和它的饭碗都会被盖住；
-皮肤那个绿色按钮还走**真 Fullscreen API**：该层进入浏览器 top layer，任何 z-index 都压不过它。
+装 `dsh-macos-skin` 这类界面皮肤时，会插入一层 **`z-index: 2147483000` 的不透明全屏壁纸**，会引发两个问题 —— 本插件两件都管：
 
-本插件自带一层**小而克制的兼容补丁**（**不需要**再额外装桥接插件）：
+**① 鲸鱼和饭碗被壁纸盖住。**
+皮肤一开，上游鲸鱼（`.dshwv-root`，`z-index: 9999`）和饭碗都在壁纸底下。本插件检测到皮肤后，把鲸鱼与饭碗抬到壁纸之上。
 
-| 场景 | 插件怎么做 |
-|---|---|
-| 没有皮肤 | 饭碗取 `z-index: 10050`（压过鲸鱼图的 `1`、根元素的 `9999`、上游菜单的 `10000/10001`）；**完全不碰**上游自己的动态层级 |
-| 检测到皮肤 | 把鲸鱼根元素与饭碗抬到 `2147483100 / 2147483105`（压过皮肤层 `2147483000`）；皮肤消失后**还原**，交回上游 |
-| 进入全屏 | 把鲸鱼根元素搬进 `document.fullscreenElement`，退出时搬回原处 |
-| 如何判定"皮肤" | 先看已知 id `#dsh-desktop`，再按几何特征兜底：`position: fixed` + `z-index ≥ 1000000` + 宽度 ≥ 视口 90% |
+**② 应用自己的对话框/菜单"点不开"。**
+DSH 把它的模态框、菜单、悬浮卡、提示 portal 到 `<body>`，而且**完全不给 z-index**（只给 `position: fixed`）—— 所以只要装了这类皮肤，**设置和所有弹窗都会画在壁纸底下**（点击其实生效，只是看不见）。本插件会把 `<body>` 下的其它层级一起抬到壁纸之上。
 
-- 判定与同步跑在 **3 秒一次的巡检**里（皮肤开/关、进/退全屏都会自动跟随），启动时先执行一次。
-- 与 `dsh-whale-skin-bridge` 共存**不冲突**：取值一致，两者都只是"把同一批元素抬到同一层"。
-- 饭碗**故意不带** `dshwv-food` 类 —— 桥接会在全屏时把 `.dshwv-food` 单独搬进 fullscreen 元素，那样饭碗会脱离锚点容器跑偏。
-- 回归测试见 `test/layers.mjs`（7 组 / 29 项）：守住「**饭碗必须压过鲸鱼**」这条线，以及上面这些约定。
+完整的层号约定（与 `dsh-whale-skin-bridge` 取值完全一致）：
+
+| 层 | z-index | 说明 |
+|---|---|---|
+| 皮肤壁纸 `#dsh-desktop` | 2147483000 | 皮肤自己插入 |
+| 鲸鱼本体 `.dshwv-root` | 2147483100 | 抬到壁纸之上 |
+| 饭碗 `.dshwv-food` | 2147483105 | 必须在鱼之上（拖动/飞进嘴里两个阶段都要可见） |
+| 鲸鱼右键菜单 `.dshwv-menu` | 2147483110 | — |
+| **body 级应用层**（对话框/菜单/提示/第三方浮层） | 2147483200 | **这条是"设置点不开"的解药** |
+| 皮肤自己的弹窗/提示 | 2147483300+ | 有意保持在其上 |
+
+实现要点：
+
+- 兼容层是一段 `<style>`，**只在检测到皮肤时注入**，皮肤消失即移除（比无条件注入更保守）。
+- **进全屏时**：皮肤那个绿色按钮走真 Fullscreen API，其层进入浏览器 top layer，任何 z-index 都压不过 —— 所以把鲸鱼与右键菜单搬进 `document.fullscreenElement`，退出时搬回。
+- **判定"皮肤"**：先看已知 id `#dsh-desktop`，再按几何特征兜底（`position: fixed` + `z-index ≥ 1000000` + 宽度 ≥ 视口 90%）。
+- **自救开关**：控制台执行 `localStorage['dshwp-compat']='0'` 再刷新，可完全关闭这一层兼容（排查冲突时用）；改回 `'1'` 恢复。
+- 与 `dsh-whale-skin-bridge` **共存不冲突**（取值完全一致，重复抬同一层是幂等的）；装了本插件后 bridge 不再是必需。
+- 回归测试见 `test/layers.mjs`。
 
 ## 开发与测试
 

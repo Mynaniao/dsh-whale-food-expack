@@ -115,4 +115,19 @@ group('左吸附镜像时，我们的文字必须翻正（台词曾经反着）'
   ok(/applyFlip/.test(js), 'JS 内联翻正作为双保险仍然保留');
 });
 
+group('皮肤共存层：接回了原 dsh-whale-skin-bridge 的职责', () => {
+  // 装 dsh-macos-skin 这类皮肤会插入 2147483000 的不透明壁纸；
+  // 而 DSH 应用把对话框 portal 到 body 且**没有 z-index** → 不抬就"设置点不开"。
+  ok(js.includes("'dshwp-skin-compat'"), '要有兼容样式标签 id');
+  ok(/\.dshwv-menu\s*\{\s*z-index:\s*2147483110/.test(js), '要抬鲸鱼右键菜单到 2147483110');
+  ok(/2147483200\s*!important/.test(js), '要抬应用层到 2147483200');
+  ok(/:not\(#dsh-desktop\)/.test(js), '应用层规则要排除皮肤层自身');
+  ok(/\.dshwv-root\).*?\.dshwv-menu\).*?\.dshwv-food\)/s.test(js), '要排除鲸鱼家族');
+  ok(js.includes(':not(script):not(style):not(link)'), '要排除 script/style/link');
+  ok(js.includes('function ensureCompatStyle'), '要有注入/移除函数（皮肤消失要撤得掉）');
+  ok(js.includes('ensureCompatStyle(on)'), '要由 syncLayers 在皮肤出现/消失时联动');
+  ok(js.includes("load('dshwp-compat', '1')"), '要有用户自救开关 dshwp-compat');
+  ok(js.includes("querySelector('.dshwv-menu')"), '全屏时要把右键菜单一起搬进 fullscreenElement');
+});
+
 console.log('\nok — ' + groups + ' 组断言 / ' + checks + ' 项检查全部通过');
