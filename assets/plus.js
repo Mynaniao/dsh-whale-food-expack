@@ -91,7 +91,12 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     satBubble.className = 'dshwp-sat' + (pct <= 20 ? ' dshwp-sat-bad' : (pct <= 50 ? ' dshwp-sat-warn' : ''));
   }
 
-  /** 鲸鱼左吸附时上游给根元素加 `.dshwv-left`（transform:scaleX(-1)），文字要翻回来。 */
+  /**
+   * 鲸鱼左吸附时上游给根元素加 `.dshwv-left`（transform:scaleX(-1)），文字要翻回来。
+   * 注意：这里的内联样式只是**双保险** —— 真正的保证在 plus.css 的 `.dshwv-left ... .dshwp-*-text`
+   * 规则里（CSS 驱动，天然与上游的类切换同步）；而且文字 span 必须有 display:inline-block，
+   * 否则 transform 对行内元素无效（历史上台词就是这么反着的）。
+   */
   function applyFlip() {
     var flipped = !!(root && root.classList && root.classList.contains('dshwv-left'));
     var t = flipped ? 'scaleX(-1)' : '';
@@ -200,6 +205,7 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     toast = document.createElement('div');
     toast.className = 'dshwp-toast';
     toastText = document.createElement('span');
+  toastText.className = 'dshwp-toast-text';   // 见 CSS：inline-block 才能被 transform
     toast.appendChild(toastText);
     root.appendChild(toast);
 
@@ -210,6 +216,7 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     satBubble = document.createElement('div');
     satBubble.className = 'dshwp-sat';
     satText = document.createElement('span');
+  satText.className = 'dshwp-sat-text';       // 见 CSS：inline-block 才能被 transform
     satBubble.appendChild(satText);
     corner.appendChild(satBubble);
     root.appendChild(corner);

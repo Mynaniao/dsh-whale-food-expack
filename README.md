@@ -10,7 +10,7 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](#开发与测试)
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 
-当前版本 **1.1.1**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
+当前版本 **1.2.0**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
 
 ---
 
@@ -106,6 +106,35 @@ dsh plugin --profile web remove dsh-whale-food-expack
 **它会读取我的对话内容吗？**
 不读。宿主半端只订阅 agent 的**状态事件**（开工/收工/工具名/成败），不含对话内容；前端也只是把这些状态画成动画。
 
+## 桌面端（DeepSeek Orb）支持
+
+DSH 桌面端（Electron）的 `index.html` 由安装包的**静态 dist 直出**，所以网页形态用的 `tapIndex`（HTML 函数变换）在桌面端**永远不会被调用** —— 只挂 `tapIndex` 的插件在 Orb 里会"装上了但什么都不显示"。
+
+本插件**两条通道都挂**（与上游 `dsh-whale-widget` 的做法一致）：
+
+| 形态 | 走的通道 |
+|---|---|
+| 网页版（`dsh web`） | `tapIndex` —— 注入 `<link>` + `<script type="module">` |
+| 桌面版（Orb） | `webserver/index-inject` 的**结构化行**（经 IPC 交给页面侧逐行应用） |
+
+几个关键取舍（都是踩出来的）：
+
+- 结构化行必须是**内联 `script`**，不能用 `script-src`：后者的 `await loadScript` 一旦失败会 reject 掉 `__DSH_BOOT_READY__`，**整个应用起不来**。
+- 行内**自己建元素并吞掉 `onerror`**：路由在就正常加载、不在就静默失败，宿主永远不会因为我们启动失败（桌面端的注入表只在宿主启动时收集一次，没有刷新路径）。
+- **故意不用对象级 `export const inject = [...]`**：它会把 `apply()` 推迟到服务就绪之后，而桌面端那张表是启动时一次性收集的 —— 订阅晚了就永远进不了表（上游 issue #152/#153 的竞态）。改为 `apply()` 立即执行、第一件事就注册注入行，服务依赖用局部 `ctx.inject([...], cb)` 等待。
+- 两条通道在网页版**同时生效**时，靠前端 `window.__dshWhalePlus` 保证脚本只真正启动一次。
+
+## 左吸附镜像时的文字翻正
+
+鲸鱼贴到左边时，上游给根元素加 `.dshwv-left{transform:scaleX(-1)}`（整根镜像），挂在根里的文字要翻回来。
+
+⚠️ 这里有个 CSS 陷阱值得记一笔：**`transform` 对非替换的行内元素无效**。
+
+- `.dshwp-sat`（饱食度气泡）是 `display:flex` → 里面的 `span` 被块化 → 翻正生效 ✓
+- `.dshwp-toast`（台词吐司）是普通块级 → 里面的 `span` 是**纯行内** → 只写 `scaleX(-1)` 会被浏览器**直接忽略** ✗
+
+所以两处文字都显式加了 `display:inline-block`，并让翻正规则**由 `.dshwv-left` 这个类驱动**（与上游镜像天然同步，不依赖 JS 轮询时机）；JS 里的内联翻正作为双保险保留。
+
 ## 与界面皮肤 / 全屏共存（兼容补丁）
 
 DSH 的界面皮肤（例如 `dsh-macos-skin`）会插入一个 `position: fixed` 的全屏层（`#dsh-desktop`，`z-index: 2147483000`），
@@ -132,10 +161,10 @@ DSH 的界面皮肤（例如 `dsh-macos-skin`）会插入一个 `position: fixed
 npm test                 # = node test/host.mjs && node test/satiety.mjs && node test/layers.mjs
 node test/host.mjs       # 25 项：注入幂等、事件折叠、失败判定、并行工具、FIFO 兜底、静态资源解析
 node test/satiety.mjs    # 24 项：下降速率、喂食、档位、语境、相邻不重复、台词文件一致性
-node test/layers.mjs     # 29 项：饭碗必须压过鲸鱼；皮肤/全屏兼容补丁的常量与挂接；饭碗不挂 dshwv-food
+node test/layers.mjs     # 35 项：饭碗必须压过鲸鱼；皮肤/全屏兼容；桌面端注入行；镜像文字翻正
 ```
 
-**78 条断言**，不联网、不启动 DSH、不碰真实 `~/.dsh`。CI 见 [`.github/workflows/test.yml`](.github/workflows/test.yml)（push / PR 自动跑）。
+**88 条断言**，不联网、不启动 DSH、不碰真实 `~/.dsh`。CI 见 [`.github/workflows/test.yml`](.github/workflows/test.yml)（push / PR 自动跑）。
 
 - Node ≥ 20（仅开发与测试需要；装插件本身不需要）
 - 结构：宿主 `lib/index.js`（折叠 agent 活动成 `/dsh-whale-food-expack/activity.json`，并白名单式暴露 `assets/`）；

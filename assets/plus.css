@@ -294,3 +294,21 @@
 @keyframes dshwv-shake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-1.6%) rotate(-1.2deg)}75%{transform:translateX(1.6%) rotate(1.2deg)}}
 
 @keyframes dshwv-paw{0%{transform:translateY(0)}100%{transform:translateY(-38%)}}
+
+/* ---------- 左吸附镜像时的文字翻正 ----------
+ * 上游贴左边会给根元素加 .dshwv-left{transform:scaleX(-1)}（整根镜像），
+ * 我们挂在根里的文字要翻回来。
+ * ⚠️ 必须给文字 span 加 display:inline-block：transform 对**非替换的行内元素无效**，
+ *    而 .dshwp-toast 是普通块级（子 span 是纯行内）→ 只写 scaleX(-1) 会被浏览器直接忽略。
+ *    .dshwp-sat 是 flex 容器，子 span 本来就被块化，所以它一直正常 —— 这就是
+ *    "百分比是对的、台词却反着"的原因。
+ */
+.dshwp-toast-text,
+.dshwp-sat-text {
+  display: inline-block;   /* 让 transform 生效（行内元素不可 transform） */
+}
+
+.dshwv-root.dshwv-left .dshwp-toast-text,
+.dshwv-root.dshwv-left .dshwp-sat-text {
+  transform: scaleX(-1);   /* 与上游的镜像相乘 → 文字恢复正向 */
+}

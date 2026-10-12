@@ -3,7 +3,8 @@
  * 跑法：node test/host.mjs
  */
 import assert from 'node:assert/strict';
-import { createActivity, injectPlus, resolveAsset, name, inject } from '../lib/index.js';
+import { createActivity, injectPlus, resolveAsset, name, registerIndexRows, DESKTOP_ROW_TEXT } from '../lib/index.js';
+import * as hostModule from '../lib/index.js';
 
 let passed = 0;
 const groups = [];
@@ -15,7 +16,35 @@ function check(title, fn) {
 // ---------- 元数据 ----------
 groups.push('导出与 patch 行一致');
 check('name 与 cordis.patch.yml 的行 id 一致', () => assert.equal(name, 'dsh-whale-food-expack'));
-check('inject 只要 webServer', () => assert.deepEqual(inject, ['webServer']));
+
+// ---------- 桌面端（Orb）注入 ----------
+groups.push('桌面端注入通道');
+check('故意不用对象级 inject —— 否则桌面端会因为订阅太晚而完全不显示', () => {
+  // 桌面壳的 index 注入表在宿主启动时只收集一次、无刷新路径；对象级 inject 会推迟 apply()。
+  // 若这里又加回 `export const inject = [...]`，Orb 里就会重现"喂食插件无显示"。
+  assert.ok(!('inject' in hostModule), '不应再导出对象级 inject');
+});
+check('结构化注入行是内联 script（绝不能用 script-src）', () => {
+  const rows = [];
+  const fakeRoot = {
+    effect: (fn) => { fn(); },
+    on: (evt, fn) => { if (evt === 'webserver/index-inject') fn(rows); return () => {}; },
+  };
+  registerIndexRows(fakeRoot);
+  assert.equal(rows.length, 1, '应恰好推入一行');
+  assert.equal(rows[0].kind, 'script', 'kind 必须是 script（script-src 的 reject 会打掉 __DSH_BOOT_READY__）');
+  assert.equal(rows[0].placement, 'body');
+});
+check('结构化行引用 plus.js / plus.css', () => {
+  assert.ok(DESKTOP_ROW_TEXT.includes('/dsh-whale-food-expack/plus.js'), '要加载 plus.js');
+  assert.ok(DESKTOP_ROW_TEXT.includes('/dsh-whale-food-expack/plus.css'), '要加载 plus.css');
+});
+check('结构化行吞掉 onerror（路由不在也不拖垮宿主启动）', () => {
+  assert.ok(DESKTOP_ROW_TEXT.includes('s.onerror=function(){}'), '必须吞掉 onerror');
+});
+check('结构化行与前端共用同一个启动标记（两条通道只启动一次）', () => {
+  assert.ok(DESKTOP_ROW_TEXT.includes('window.__dshWhalePlus'), '应检查 window.__dshWhalePlus');
+});
 
 // ---------- index 注入 ----------
 groups.push('index 注入');

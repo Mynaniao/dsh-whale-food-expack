@@ -22,7 +22,8 @@ const ok = (cond, msg) => { checks++; assert.ok(cond, msg); };
 
 /** 取某个选择器块里的某个属性值（先剥掉注释，否则注释会把属性分隔符挡住） */
 const cssValue = (selector, prop) => {
-  const re = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}');
+  // 支持选择器列表：`A,\nB { ... }` —— 目标选择器后面可能还有别的选择器再跟 {
+  const re = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*(?:,[^{}]*)?\\{([^}]*)\\}');
   const m = re.exec(css);
   if (!m) return null;
   const body = m[1].replace(/\/\*[\s\S]*?\*\//g, '');      // ← 关键：先去掉注释
@@ -97,6 +98,21 @@ group('饭碗不挂 dshwv-food（桥接会在全屏时把它单独搬走 → 会
   const cls = /food\.className = '([^']+)'/.exec(js);
   ok(cls, "应能找到 food.className 赋值");
   ok(!/\bdshwv-food\b/.test(cls[1]), "饭碗的类名里不能有 dshwv-food（当前：'" + cls[1] + "'）");
+});
+
+group('左吸附镜像时，我们的文字必须翻正（台词曾经反着）', () => {
+  // 上游贴左边给根元素 .dshwv-left{transform:scaleX(-1)}；我们挂在根里的文字要翻回来。
+  // ⚠️ 关键坑：transform 对**非替换的行内元素无效**。
+  //    .dshwp-sat 是 flex 容器 → 子 span 被块化 → 一直正常；
+  //    .dshwp-toast 是普通块级 → 子 span 是纯行内 → 只写 scaleX(-1) 会被浏览器丢弃（这就是 bug）。
+  const toastText = cssValue('.dshwp-toast-text', 'display');
+  const satText = cssValue('.dshwp-sat-text', 'display');
+  ok(toastText === 'inline-block', '吐司文字必须 display:inline-block 才能被 transform（当前 ' + toastText + '）');
+  ok(satText === 'inline-block', '气泡文字同样加 inline-block（当前 ' + satText + '）');
+  ok(/\.dshwv-root\.dshwv-left\s+\.dshwp-toast-text/.test(css), 'CSS 要有 .dshwv-left 下的吐司翻正规则（CSS 驱动，不靠轮询时机）');
+  ok(/\.dshwv-root\.dshwv-left\s+\.dshwp-sat-text/.test(css), 'CSS 要有 .dshwv-left 下的气泡翻正规则');
+  ok(/dshwp-toast-text/.test(js) && /dshwp-sat-text/.test(js), 'JS 要给两个文字 span 挂上对应类名');
+  ok(/applyFlip/.test(js), 'JS 内联翻正作为双保险仍然保留');
 });
 
 console.log('\nok — ' + groups + ' 组断言 / ' + checks + ' 项检查全部通过');
