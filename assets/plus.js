@@ -15,7 +15,10 @@
  *
  * 本文件由宿主以 `<script type="module">` 注入，所以能用 import 引纯逻辑模块（便于单测）。
  */
-import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTERVAL_MS, HUNGER_TOAST_MS } from './satiety.mjs';
+import {
+  decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTERVAL_MS, HUNGER_TOAST_MS,
+  tokensToSatiety, formatTokens, TOKENS_PER_PERCENT, TOKEN_LOSS_CAP,
+} from './satiety.mjs';
 
 (function () {
   if (window.__dshWhalePlus) return;
@@ -55,7 +58,17 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
   var satLastShown = -1;      // 上次渲染的整数百分比（避免每秒刷 DOM）
   var hungerLastAt = 0;       // 上次喊饿的时间；0 = 还没喊过 → 刚饿下来会立刻喊一句
   var lastHungerLine = '';    // 上一句饿话（相邻两句不重复）
-  var workRunning = false;    // agent 是否在干活（决定是否 ×5 消耗）
+  var workRunning = false;    // agent 是否在干活（干活时按 token 掉，不干活按时间掉）
+
+  // ---------- token → 饱食度 换算（2026-10-15 新增）----------
+  // 依据：本机真实日志实测，每次 LLM 调用平均 输入 5286 / 输出 1088 tokens，
+  //       一次工具调用 ≈ 一次 LLM 调用。
+  // 取 20000 tokens = 1%：一个 50 步的日常任务 ≈ 16% ≈ 3 碗饭，喂饭节奏刚好。
+  var TOKENS_PER_PERCENT = 20000;  // 多少 tokens 掉 1% 饱食度
+  var TOKEN_LOSS_CAP = 2;          // 单次最多掉 2%（防止读一个大文件就饿死）
+  var tokenCursor = 0;             // 已计入的上次 tokens 值（宿主每轮 turn/start 归零）
+  var turnTokenTotal = 0;          // 本轮累计消耗（用于收工播报）
+  var turnSatietyLost = 0;         // 本轮累计掉的饱食度（用于收工播报）
   var satBubble = null;       // 饱食度气泡
   var satText = null;         // 气泡里的文字（镜像时只翻这层）
   var corner = null;          // 饭碗 + 气泡的锚定容器（与鲸鱼图同盒 → 随鲸鱼缩放/移动）
@@ -109,7 +122,8 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     var now = Date.now();
     var minutes = (now - satLastTick) / 60000;
     satLastTick = now;
-    if (minutes > 0) satiety = decay(satiety, minutes, workRunning);
+    // 空闲按时间掉（1%/分钟）；干活时**不再**用 ×5 时间倍率 —— 改由 token 驱动（见 react()）
+    if (minutes > 0) satiety = decay(satiety, minutes, false);
     renderSatiety();
     applyFlip();
     if (now - satLastSave > 10000) saveSatiety();
@@ -626,7 +640,7 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
   }
 
   // ---------- 反应：打字手部 + 工具提示 ----------
-  var state = { seq: -1, running: false, tool: '', toolOk: true, toolRunning: false, at: 0, stale: false };
+  var state = { seq: -1, running: false, tool: '', toolOk: true, toolRunning: false, at: 0, stale: false, tokens: 0 };
   var popTimer = null, shakeTimer = null;
 
   function oneShot(cls, ms) {
@@ -653,7 +667,25 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     state = {
       seq: next.seq, running: !!next.running, tool: next.tool || '', toolOk: next.toolOk !== false,
       toolRunning: !!next.toolRunning, at: next.at || 0, stale: false,
+      tokens: Number(next.tokens || 0),
     };
+
+    // ---------- token 驱动的饱食度消耗（干活时）----------
+    // 宿主在 turn/start 时把 tokens 归零 → 增量变负 → 那正是"新一轮开始"，重置游标。
+    var tok = state.tokens;
+    if (tok < tokenCursor) { tokenCursor = 0; turnTokenTotal = 0; turnSatietyLost = 0; }
+    if (tok > tokenCursor) {
+      var delta = tok - tokenCursor;
+      tokenCursor = tok;
+      turnTokenTotal += delta;
+      var loss = tokensToSatiety(delta);
+      if (loss > 0) {
+        satiety = clamp(satiety - loss);
+        turnSatietyLost += loss;
+        renderSatiety();
+        saveSatiety();
+      }
+    }
     // 陈旧兜底：声称在跑但很久没动静、且没有工具在飞 → 当作收工（工具在跑时不判）
     if (state.running && !state.toolRunning && state.at && Date.now() - state.at > 90000) state.stale = true;
 
@@ -664,7 +696,13 @@ import { decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTE
     if (fresh && running && !prev.running) showToast('🔧 开工！', 'done', 1600);
     if (fresh && !running && prev.running) {
       oneShot('dshwp-pop', 700);
-      showToast('✨ 干完啦～', 'done', 2000);
+      // 收工播报：本轮吃了多少 token、掉了多少饱食度（用户 2026-10-15 要求）
+      var spent = formatTokens(turnTokenTotal);
+      var lostPct = turnSatietyLost >= 0.05 ? turnSatietyLost.toFixed(1) : '0';
+      var msg = '✨ 干完啦～ 本轮 ' + spent + ' tokens · 饱食度 -' + lostPct + '%';
+      showToast(msg, 'done', 3200);
+      turnTokenTotal = 0;
+      turnSatietyLost = 0;
     }
     if (fresh && state.tool && state.tool !== prev.tool) showToast('🛠 ' + state.tool, '', 1600);
     if (fresh && !state.toolOk) {

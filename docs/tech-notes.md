@@ -46,7 +46,9 @@
 | 常量 | 值 | 含义 |
 |---|---|---|
 | `IDLE_PER_MIN` | 1 | 空闲每分钟 −1% |
-| `WORK_MULTIPLIER` | 5 | 干活 ×5 → −5%/分钟 |
+| `TOKENS_PER_PERCENT` | 20000 | **干活时**多少 token 掉 1%（2026-10-15 起取代时间倍率）|
+| `TOKEN_LOSS_CAP` | 2 | 单次结算最多掉 2% |
+| `WORK_MULTIPLIER` | 5 | **已停用**（旧时间倍率，保留兼容）|
 | `FEED_GAIN` | 5 | 一碗饭 +5% |
 | `HUNGRY_AT` | 50 | ≤50% 开始喊饿话 |
 | `TIER_SPAN` / `TIER_COUNT` | 10 / 5 | 每降 10% 换一档，共 5 档 |
@@ -55,8 +57,18 @@
 | `HUNGER_TOAST_MS` | 3000 | 饿话吐司停留 3 秒 |
 | `FED_FULL_AT` / `FED_HUNGRY_AT` / `FED_STARVING_AT` | 80 / 50 / 20 | 喂饭台词分档阈值 |
 
-- **节奏**（`test/satiety.mjs` 有断言）：一碗饭撑 **5 分钟**空闲 / **1 分钟**干活；
-  从满值饿到 0：空闲 **100 分钟** / 一直干活 **20 分钟**。
+- **节奏**（`test/satiety.mjs` 有断言）：一碗饭撑 **5 分钟**空闲；
+  干活时按 token 算（见下）。
+- **token 换算的由来**：`TOKENS_PER_PERCENT = 20000` 不是拍脑袋定的，是从真实会话日志量出来的
+  （脚本 `pkg/extract-token-stats.mjs`，按**多帧 zstd**解 `~/.dsh/sessions/*/session.v4.jsonl.zstd`，
+  统计 `assistant/chunk` 里的 `usage`）：每次 LLM 调用平均 **输入 5,286 / 输出 1,088 tokens**，
+  一次工具调用 ≈ 一次 LLM 调用 ≈ 6.4K tokens。于是 20,000 tokens = 1% → 一次工具调用约 −0.32%，
+  50 步的日常任务约 −16%（≈3 碗饭）。
+- **计费口径**：只算 **输出 + 非缓存输入**（`freshIn + outTok`），
+  `cacheReadTokens` 是每轮重发的历史上下文，算进去会掉得莫名其妙 → **排除**。
+  宿主在 `turn/start` 归零 `tokens`，前端靠"增量变负"识别新回合并重置游标。
+  前端每次轮询（1.2s）结算一次增量，`tokensToSatiety()` 单次封顶 `TOKEN_LOSS_CAP`（2%）。
+  收工时吐司播报本轮总量：`✨ 干完啦～ 本轮 12.3K tokens · 饱食度 -8.0%`。
 - **台词**：喂饭 `assets/feed-lines.json`（四档 `starving` / `hungry` / `normal` / `full`，
   "再吃真的要变成大肥鱼了"**只在 `full`**；`N` 替换成喂食次数）；
   饿话 `assets/hunger-lines.json`（5 个数组对应 5 档）。

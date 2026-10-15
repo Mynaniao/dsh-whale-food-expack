@@ -10,7 +10,7 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](#开发与测试)
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 
-当前版本 **1.3.0**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0（建议，非强制） · 包体积约 **350 KB**
+当前版本 **1.4.0**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0
 
 ---
 
@@ -33,8 +33,8 @@
 |---|---|---|
 | ① | **喂白米饭** | 把白米饭🍚拖到鲸鱼身上 → 鲸鱼张嘴咀嚼、冒一句对应台词并增加饱食度（没拖中会飞回原位） |
 | ② | **续饭功能** | 满碗喂掉后**留一个空碗**；**左键单击空碗**自动盛满，开始下一轮（刷新后仍保持空碗）；注意⚠️：空碗🥣无法拖动 |
-| ③ | **饱食度系统** | 空闲 **−1%/分钟**、干活 **×5（−5%/分钟）**；喂一碗饭 **+5%**。**≤50%** 时每 30 秒主动喊一句饿话，越饿说得越惨（5 档）。数值实时显示在**右上角小气泡**里：深蓝 = 正常、橙色 = 饿了、红色 = 快饿死了 |
-| ④ | **敲键盘反应** | agent 干活时鲸鱼**敲键盘**并**露出两只手**；每次工具调用吐司报工具名（`🛠 read`）；工具失败变红抖动（`💥 pwsh 失败了`）；开工「🔧 开工！」、收工「✨ 干完啦～」并伸个懒腰 |
+| ③ | **饱食度系统** | 空闲 **−1%/分钟**；**干活时按 token 消耗**（20,000 tokens = −1%，单次最多 −2%）；喂一碗饭 **+5%**。**≤50%** 时每 30 秒主动喊一句饿话，越饿说得越惨（5 档）。数值实时显示在**右上角小气泡**里：深蓝 = 正常、橙色 = 饿了、红色 = 快饿死了 |
+| ④ | **敲键盘反应** | agent 干活时鲸鱼**敲键盘**并**露出两只手**；每次工具调用吐司报工具名（`🛠 read`）；工具失败变红抖动（`💥 pwsh 失败了`）；开工「🔧 开工！」、收工播报「✨ 干完啦～ 本轮 12.3K tokens · 饱食度 -8.0%」并伸个懒腰 |
 
 ## 安装
 
@@ -42,7 +42,7 @@
 本插件只是它的附加层，**没有本体不会显示任何东西**。
 
 ```bash
-# 从 npm / 插件市场安装（推荐，已发布 v1.1.1）
+# 从 npm / 插件市场安装（推荐，已发布 v1.4.0）
 dsh plugin --profile web add dsh-whale-food-expack
 
 # 或者直接从 GitHub 安装
@@ -63,11 +63,15 @@ dsh plugin --profile web remove dsh-whale-food-expack
 | 常量 | 当前值 | 含义 |
 |---|---|---|
 | `IDLE_PER_MIN` | `1` | 空闲每分钟掉 1% |
-| `WORK_MULTIPLIER` | `5` | 干活时快 5 倍（即 5%/分钟） |
+| `TOKENS_PER_PERCENT` | `20000` | 干活时多少 token 掉 1%（调大更耐饿，调小饿得快） |
+| `TOKEN_LOSS_CAP` | `2` | 单次结算最多掉 2% |
 | `FEED_GAIN` | `5` | 一碗饭 +5% |
 | `HUNGRY_AT` | `50` | ≤50% 开始喊饿 |
 | `TIER_SPAN` / `TIER_COUNT` | `10` / `5` | 每降 10% 换一档，共 5 档 |
 | `HUNGER_INTERVAL_MS` / `HUNGER_TOAST_MS` | `30000` / `3000` | 每 30 秒一句，吐司停留 3 秒 |
+
+> 20,000 这个数是从真实会话日志量出来的（一次工具调用约 6.4K tokens → 约 −0.32%，
+> 50 步的日常任务约 −16% ≈ 3 碗饭）。推导与计费口径见 [`docs/tech-notes.md`](docs/tech-notes.md)。
 
 **台词**都在 `assets/` 里，直接编辑、刷新即生效：
 
@@ -94,92 +98,43 @@ dsh plugin --profile web remove dsh-whale-food-expack
 装完记得**重启 `dsh web`**，然后刷新页面。
 
 **叠加层错位了（嘴跑到额头、手飘在半空）？**
-上游换立绘或挂了别的皮肤插件时会发生。按 **`Ctrl+Alt+M`** 进入调整模式 → 嘴/键盘/左手/右手会出现红色虚线框，直接拖动；再按一次 `Ctrl+Alt+M`（或 `Esc`）结束，**松手即存**。位置存在 `localStorage['dshwp-cal']`。。
+上游换立绘或挂了别的皮肤插件时会发生。按 **`Ctrl+Alt+M`** 进入调整模式 → 嘴/键盘/左手/右手会出现红色虚线框，直接拖动；再按一次 `Ctrl+Alt+M`（或 `Esc`）结束，**松手即存**。位置存在 `localStorage['dshwp-cal']`。
 
 **想彻底关掉？**
 `dsh plugin --profile web remove dsh-whale-food-expack`，然后重启；本体继续正常工作。
 
 **饥饿模式台词不出现？**
-饱食度要**降到 50% 以下**才会开始说；而且**每分钟（30 秒）一句**，不是一直在说。想立刻看效果：
+饱食度要**降到 50% 以下**才会开始说；而且**每 30 秒一句**，不是一直在说。想立刻看效果：
 控制台执行 `localStorage['dshwv-satiety']='45'; localStorage['dshwv-satiety-at']=Date.now()` 再刷新。
 
 **它会读取我的对话内容吗？**
 不读。宿主半端只订阅 agent 的**状态事件**（开工/收工/工具名/成败），不含对话内容；前端也只是把这些状态画成动画。
 
-## 桌面端（DeepSeek Orb）支持
+## 兼容性
 
-DSH 桌面端（Electron）的 `index.html` 由安装包的**静态 dist 直出**，所以网页形态用的 `tapIndex`（HTML 函数变换）在桌面端**永远不会被调用** —— 只挂 `tapIndex` 的插件在 Orb 里会"装上了但什么都不显示"。
+**桌面端（DeepSeek Orb）**：支持。桌面端的 `index.html` 由安装包静态直出，网页版用的 `tapIndex` 在那边不会被调用，所以本插件同时挂了 `webserver/index-inject` 那条通道 —— 两条通道并存时靠 `window.__dshWhalePlus` 保证只启动一次。桌面端改完需**完全重启 Orb**。
 
-本插件**两条通道都挂**（与上游 `dsh-whale-widget` 的做法一致）：
+**界面皮肤（如 `dsh-macos-skin`）与全屏**：支持。皮肤会插入一层不透明全屏壁纸（`z-index: 2147483000`），本插件检测到后把鲸鱼、饭碗、右键菜单，以及应用自己的对话框/菜单（它们 portal 到 `<body>` 且**没有 z-index**，不抬就会"设置点不开"）一起抬到壁纸之上。进全屏时把鲸鱼与菜单搬进 `document.fullscreenElement`。
 
-| 形态 | 走的通道 |
-|---|---|
-| 网页版（`dsh web`） | `tapIndex` —— 注入 `<link>` + `<script type="module">` |
-| 桌面版（Orb） | `webserver/index-inject` 的**结构化行**（经 IPC 交给页面侧逐行应用） |
+层号约定：壁纸 `2147483000` < 鲸鱼 `2147483100` < 饭碗 `2147483105` < 右键菜单 `2147483110` < 应用层 `2147483200` < 皮肤自己的弹窗 `2147483300+`。
 
-几个关键取舍（都是踩出来的）：
-
-- 结构化行必须是**内联 `script`**，不能用 `script-src`：后者的 `await loadScript` 一旦失败会 reject 掉 `__DSH_BOOT_READY__`，**整个应用起不来**。
-- 行内**自己建元素并吞掉 `onerror`**：路由在就正常加载、不在就静默失败，宿主永远不会因为我们启动失败（桌面端的注入表只在宿主启动时收集一次，没有刷新路径）。
-- **故意不用对象级 `export const inject = [...]`**：它会把 `apply()` 推迟到服务就绪之后，而桌面端那张表是启动时一次性收集的 —— 订阅晚了就永远进不了表（上游 issue #152/#153 的竞态）。改为 `apply()` 立即执行、第一件事就注册注入行，服务依赖用局部 `ctx.inject([...], cb)` 等待。
-- 两条通道在网页版**同时生效**时，靠前端 `window.__dshWhalePlus` 保证脚本只真正启动一次。
-
-## 左吸附镜像时的文字翻正
-
-鲸鱼贴到左边时，上游给根元素加 `.dshwv-left{transform:scaleX(-1)}`（整根镜像），挂在根里的文字要翻回来。
-
-⚠️ 这里有个 CSS 陷阱值得记一笔：**`transform` 对非替换的行内元素无效**。
-
-- `.dshwp-sat`（饱食度气泡）是 `display:flex` → 里面的 `span` 被块化 → 翻正生效 ✓
-- `.dshwp-toast`（台词吐司）是普通块级 → 里面的 `span` 是**纯行内** → 只写 `scaleX(-1)` 会被浏览器**直接忽略** ✗
-
-所以两处文字都显式加了 `display:inline-block`，并让翻正规则**由 `.dshwv-left` 这个类驱动**（与上游镜像天然同步，不依赖 JS 轮询时机）；JS 里的内联翻正作为双保险保留。
-
-## 与界面皮肤 / 全屏共存（兼容补丁）
-
-装 `dsh-macos-skin` 这类界面皮肤时，会插入一层 **`z-index: 2147483000` 的不透明全屏壁纸**，会引发两个问题 —— 本插件两件都管：
-
-**① 鲸鱼和饭碗被壁纸盖住。**
-皮肤一开，上游鲸鱼（`.dshwv-root`，`z-index: 9999`）和饭碗都在壁纸底下。本插件检测到皮肤后，把鲸鱼与饭碗抬到壁纸之上。
-
-**② 应用自己的对话框/菜单"点不开"。**
-DSH 把它的模态框、菜单、悬浮卡、提示 portal 到 `<body>`，而且**完全不给 z-index**（只给 `position: fixed`）—— 所以只要装了这类皮肤，**设置和所有弹窗都会画在壁纸底下**（点击其实生效，只是看不见）。本插件会把 `<body>` 下的其它层级一起抬到壁纸之上。
-
-完整的层号约定（与 `dsh-whale-skin-bridge` 取值完全一致）：
-
-| 层 | z-index | 说明 |
-|---|---|---|
-| 皮肤壁纸 `#dsh-desktop` | 2147483000 | 皮肤自己插入 |
-| 鲸鱼本体 `.dshwv-root` | 2147483100 | 抬到壁纸之上 |
-| 饭碗 `.dshwv-food` | 2147483105 | 必须在鱼之上（拖动/飞进嘴里两个阶段都要可见） |
-| 鲸鱼右键菜单 `.dshwv-menu` | 2147483110 | — |
-| **body 级应用层**（对话框/菜单/提示/第三方浮层） | 2147483200 | **这条是"设置点不开"的解药** |
-| 皮肤自己的弹窗/提示 | 2147483300+ | 有意保持在其上 |
-
-实现要点：
-
-- 兼容层是一段 `<style>`，**只在检测到皮肤时注入**，皮肤消失即移除（比无条件注入更保守）。
-- **进全屏时**：皮肤那个绿色按钮走真 Fullscreen API，其层进入浏览器 top layer，任何 z-index 都压不过 —— 所以把鲸鱼与右键菜单搬进 `document.fullscreenElement`，退出时搬回。
-- **判定"皮肤"**：先看已知 id `#dsh-desktop`，再按几何特征兜底（`position: fixed` + `z-index ≥ 1000000` + 宽度 ≥ 视口 90%）。
-- **自救开关**：控制台执行 `localStorage['dshwp-compat']='0'` 再刷新，可完全关闭这一层兼容（排查冲突时用）；改回 `'1'` 恢复。
-- 与 `dsh-whale-skin-bridge` **共存不冲突**（取值完全一致，重复抬同一层是幂等的）；装了本插件后 bridge 不再是必需。
-- 回归测试见 `test/layers.mjs`。
+排查冲突时可以在控制台执行 `localStorage['dshwp-compat']='0'` 再刷新，关闭这一层兼容；改回 `'1'` 恢复。
 
 ## 开发与测试
 
 ```bash
 npm test                 # = node test/host.mjs && node test/satiety.mjs && node test/layers.mjs
-node test/host.mjs       # 25 项：注入幂等、事件折叠、失败判定、并行工具、FIFO 兜底、静态资源解析
-node test/satiety.mjs    # 24 项：下降速率、喂食、档位、语境、相邻不重复、台词文件一致性
-node test/layers.mjs     # 35 项：饭碗必须压过鲸鱼；皮肤/全屏兼容；桌面端注入行；镜像文字翻正
+node test/host.mjs       # 31 项：注入幂等、事件折叠、token 计费口径、失败判定、并行工具、FIFO 兜底、静态资源解析
+node test/satiety.mjs    # 30 项：下降速率、喂食、档位、语境、相邻不重复、token 换算、台词文件一致性
+node test/layers.mjs     # 45 项：层级、皮肤/全屏兼容、桌面端注入行、镜像文字翻正
 ```
 
-**88 条断言**，不联网、不启动 DSH、不碰真实 `~/.dsh`。CI 见 [`.github/workflows/test.yml`](.github/workflows/test.yml)（push / PR 自动跑）。
+**106 条断言**，不联网、不启动 DSH、不碰真实 `~/.dsh`。CI 见 [`.github/workflows/test.yml`](.github/workflows/test.yml)（push / PR 自动跑）。
 
 - Node ≥ 20（仅开发与测试需要；装插件本身不需要）
 - 结构：宿主 `lib/index.js`（折叠 agent 活动成 `/dsh-whale-food-expack/activity.json`，并白名单式暴露 `assets/`）；
   前端 `assets/plus.js` + `plus.css`（1.2 秒轮询，按 `seq` 判新事件）；纯逻辑抽在 `assets/satiety.mjs` 便于单测。
-- **实现细节**（架构图、activity 折叠规则、饱食度常量表、几何与校准坐标、本地存档键、调试方法）见
+- **实现细节**（架构、activity 折叠规则、饱食度与 token 换算的推导、几何与校准坐标、存档键、调试方法）见
   [`docs/tech-notes.md`](docs/tech-notes.md)
 
 ## 许可与致谢

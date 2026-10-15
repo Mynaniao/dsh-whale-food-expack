@@ -125,11 +125,35 @@ check('tool/result 缺 callId 时按 FIFO 收掉一个在飞的调用', () => {
   a.fold('s1', { kind: 'tool/result', message: { content: [{}] } });
   assert.equal(a.snapshot().toolRunning, false);
 });
-check('assistant/message 累加 token', () => {
+check('assistant/message 累加 token（只算输出 + 非缓存输入）', () => {
   const a = mk();
   a.fold('s1', { kind: 'turn/start' });
   a.fold('s1', { kind: 'assistant/message', usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 2 } });
-  assert.equal(a.snapshot().tokens, 17);
+  // 计费口径（2026-10-15 定）：缓存读是重发的历史上下文，不算 →
+  // (input 10 - cache 2) + output 5 = 13（旧公式会得到 17 ✗）
+  assert.equal(a.snapshot().tokens, 13, '应排除 cacheReadTokens');
+});
+check('token 明细也暴露给前端（收工播报要用）', () => {
+  const a = mk();
+  a.fold('s1', { kind: 'turn/start' });
+  a.fold('s1', { kind: 'assistant/message', usage: { inputTokens: 100, outputTokens: 40, cacheReadTokens: 60 } });
+  const s = a.snapshot();
+  assert.equal(s.rawIn, 100);
+  assert.equal(s.rawOut, 40);
+  assert.equal(s.rawCache, 60);
+  assert.equal(s.tokens, 80, 'tokens = (100-60)+40');
+});
+check('新一轮 turn/start 会把 token 归零（前端靠归零判新回合）', () => {
+  const a = mk();
+  a.fold('s1', { kind: 'turn/start' });
+  a.fold('s1', { kind: 'assistant/message', usage: { inputTokens: 100, outputTokens: 40, cacheReadTokens: 0 } });
+  assert.ok(a.snapshot().tokens > 0);
+  a.fold('s1', { kind: 'turn/start' });
+  const s = a.snapshot();
+  assert.equal(s.tokens, 0);
+  assert.equal(s.rawIn, 0);
+  assert.equal(s.rawOut, 0);
+  assert.equal(s.rawCache, 0);
 });
 check('seq 每次事件都增长（前端靠它判新事实）', () => {
   const a = mk();

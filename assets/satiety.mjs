@@ -3,7 +3,8 @@
  *
  * 规则（用户 2026-10-07 定）：
  *   - 空闲：每分钟 -1%
- *   - agent 干活时：速度 ×5（即 -5%/分钟）
+ *   - agent 干活时：**按 token 消耗**换算（2026-10-15 改，见 TOKENS_PER_PERCENT）
+ *     注：旧的"干活 ×5 时间倍率"已停用（WORK_MULTIPLIER 保留仅作兼容/参考）
  *   - 喂一碗白米饭：+5%
  *   - ≤50% 就开始主动喊饿，**每 30 秒一句**、吐司停留 **3 秒**；每再降 10% 换一档，共 5 档
  *   - 喂饭的台词也分语境（starving / hungry / normal / full），见 feedTier()
@@ -12,8 +13,46 @@
 
 /** 空闲时的下降速度（百分点/分钟）。 */
 export const IDLE_PER_MIN = 1;
-/** agent 干活时的倍率。 */
+/**
+ * agent 干活时的倍率。
+ * ⚠️ 2026-10-15 起**干活不再走时间倍率**，改按 token 消耗换算（见下方 TOKENS_PER_PERCENT）。
+ * 这个常量保留是为了兼容旧存档语义与文档引用，运行时不再参与扣减。
+ */
 export const WORK_MULTIPLIER = 5;
+
+/**
+ * 多少 token 掉 1% 饱食度。
+ *
+ * 定这个数的依据（实测，见 `pkg/extract-token-stats.mjs`）：
+ *   本机真实会话日志里，每次 LLM 调用平均 **输入 5286 / 输出 1088 tokens**；
+ *   一次工具调用 ≈ 一次 LLM 调用（约 6.4K tokens 总吞吐）。
+ * 取 20000 → 一次工具调用约 -0.32%，一个 50 步的日常任务约 -16%（≈3 碗饭），
+ * 喂饭节奏刚好；取值太大则永远饿不了，太小则一次任务就饿死。
+ */
+export const TOKENS_PER_PERCENT = 20000;
+
+/** 单次结算最多掉多少百分点（防止读一个大文件瞬间饿死）。 */
+export const TOKEN_LOSS_CAP = 2;
+
+/**
+ * token 消耗 → 饱食度损失（百分点），单次封顶 TOKEN_LOSS_CAP。
+ * @param {number} dTokens 本次新增的计费 token 数（输出 + 非缓存输入）
+ */
+export function tokensToSatiety(dTokens) {
+  if (!Number.isFinite(dTokens) || dTokens <= 0) return 0;
+  return Math.min(TOKEN_LOSS_CAP, dTokens / TOKENS_PER_PERCENT);
+}
+
+/**
+ * 把 token 数格式化成人类可读的 "12.3K" / "1.20M"。
+ * @param {number} n
+ */
+export function formatTokens(n) {
+  if (!Number.isFinite(n) || n <= 0) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(Math.round(n));
+}
 /** 一碗米饭的饱食度增量（百分点）。 */
 export const FEED_GAIN = 5;
 /** 低于等于这个值就开始喊饿。 */
