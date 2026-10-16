@@ -17,7 +17,7 @@
  */
 import {
   decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh, HUNGER_INTERVAL_MS, HUNGER_TOAST_MS,
-  tokensToSatiety, formatTokens, TOKENS_PER_PERCENT, TOKEN_LOSS_CAP,
+  tokensToSatiety, formatTokens, TOKENS_PER_PERCENT,
 } from './satiety.mjs';
 
 (function () {
@@ -64,8 +64,7 @@ import {
   // 依据：本机真实日志实测，每次 LLM 调用平均 输入 5286 / 输出 1088 tokens，
   //       一次工具调用 ≈ 一次 LLM 调用。
   // 取 20000 tokens = 1%：一个 50 步的日常任务 ≈ 16% ≈ 3 碗饭，喂饭节奏刚好。
-  var TOKENS_PER_PERCENT = 20000;  // 多少 tokens 掉 1% 饱食度
-  var TOKEN_LOSS_CAP = 2;          // 单次最多掉 2%（防止读一个大文件就饿死）
+  var TOKENS_PER_PERCENT = 20000;  // 多少 tokens 掉 1% 饱食度（不封顶）
   var tokenCursor = 0;             // 已计入的上次 tokens 值（宿主每轮 turn/start 归零）
   var turnTokenTotal = 0;          // 本轮累计消耗（用于收工播报）
   var turnSatietyLost = 0;         // 本轮累计掉的饱食度（用于收工播报）
@@ -690,7 +689,7 @@ import {
     if (state.running && !state.toolRunning && state.at && Date.now() - state.at > 90000) state.stale = true;
 
     var running = state.running && !state.stale;
-    workRunning = running;   // 饱食度消耗倍率看这个（干活 ×5）
+    workRunning = running;   // 干活时由 token 驱动扣减（空闲才走时间）
     if (running !== prev.running || (fresh && running !== prev.running)) setTyping(running);
 
     if (fresh && running && !prev.running) showToast('🔧 开工！', 'done', 1600);

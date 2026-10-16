@@ -47,7 +47,6 @@
 |---|---|---|
 | `IDLE_PER_MIN` | 1 | 空闲每分钟 −1% |
 | `TOKENS_PER_PERCENT` | 20000 | **干活时**多少 token 掉 1%（2026-10-15 起取代时间倍率）|
-| `TOKEN_LOSS_CAP` | 2 | 单次结算最多掉 2% |
 | `WORK_MULTIPLIER` | 5 | **已停用**（旧时间倍率，保留兼容）|
 | `FEED_GAIN` | 5 | 一碗饭 +5% |
 | `HUNGRY_AT` | 50 | ≤50% 开始喊饿话 |
@@ -64,10 +63,12 @@
   统计 `assistant/chunk` 里的 `usage`）：每次 LLM 调用平均 **输入 5,286 / 输出 1,088 tokens**，
   一次工具调用 ≈ 一次 LLM 调用 ≈ 6.4K tokens。于是 20,000 tokens = 1% → 一次工具调用约 −0.32%，
   50 步的日常任务约 −16%（≈3 碗饭）。
-- **计费口径**：只算 **输出 + 非缓存输入**（`freshIn + outTok`），
-  `cacheReadTokens` 是每轮重发的历史上下文，算进去会掉得莫名其妙 → **排除**。
+- **计费口径**：只算 **输出 + 非缓存输入**（`inTok + outTok`）。
+  DSH 的 `inputTokens` 本身就是"非缓存输入"（Anthropic 口径）——
+  实测 `totalTokens === inputTokens + outputTokens + cacheReadTokens`（2074 个样本 100% 吻合），
+  所以**不要再减一次 `cacheReadTokens`**；`cacheReadTokens` 是每轮重发的历史上下文，算进去会掉得莫名其妙。
   宿主在 `turn/start` 归零 `tokens`，前端靠"增量变负"识别新回合并重置游标。
-  前端每次轮询（1.2s）结算一次增量，`tokensToSatiety()` 单次封顶 `TOKEN_LOSS_CAP`（2%）。
+  前端每次轮询（1.2s）结算一次增量，**线性换算、不封顶**。
   收工时吐司播报本轮总量：`✨ 干完啦～ 本轮 12.3K tokens · 饱食度 -8.0%`。
 - **台词**：喂饭 `assets/feed-lines.json`（四档 `starving` / `hungry` / `normal` / `full`，
   "再吃真的要变成大肥鱼了"**只在 `full`**；`N` 替换成喂食次数）；

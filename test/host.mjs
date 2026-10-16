@@ -125,13 +125,14 @@ check('tool/result 缺 callId 时按 FIFO 收掉一个在飞的调用', () => {
   a.fold('s1', { kind: 'tool/result', message: { content: [{}] } });
   assert.equal(a.snapshot().toolRunning, false);
 });
-check('assistant/message 累加 token（只算输出 + 非缓存输入）', () => {
+check('assistant/message 累加 token（输出 + 非缓存输入）', () => {
   const a = mk();
   a.fold('s1', { kind: 'turn/start' });
   a.fold('s1', { kind: 'assistant/message', usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 2 } });
-  // 计费口径（2026-10-15 定）：缓存读是重发的历史上下文，不算 →
-  // (input 10 - cache 2) + output 5 = 13（旧公式会得到 17 ✗）
-  assert.equal(a.snapshot().tokens, 13, '应排除 cacheReadTokens');
+  // 计费口径（2026-10-16 修正）：DSH 的 inputTokens 本身就是非缓存输入
+  // （totalTokens = input + output + cacheRead，2074 个样本实测），所以不再减 cache →
+  // 10 + 5 = 15（旧公式 max(0,10-2)+5 = 13 ✗）
+  assert.equal(a.snapshot().tokens, 15, 'inputTokens 已是非缓存输入，不能再减 cacheReadTokens');
 });
 check('token 明细也暴露给前端（收工播报要用）', () => {
   const a = mk();
@@ -141,7 +142,7 @@ check('token 明细也暴露给前端（收工播报要用）', () => {
   assert.equal(s.rawIn, 100);
   assert.equal(s.rawOut, 40);
   assert.equal(s.rawCache, 60);
-  assert.equal(s.tokens, 80, 'tokens = (100-60)+40');
+  assert.equal(s.tokens, 140, 'tokens = 100 + 40');
 });
 check('新一轮 turn/start 会把 token 归零（前端靠归零判新回合）', () => {
   const a = mk();

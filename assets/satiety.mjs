@@ -31,16 +31,14 @@ export const WORK_MULTIPLIER = 5;
  */
 export const TOKENS_PER_PERCENT = 20000;
 
-/** 单次结算最多掉多少百分点（防止读一个大文件瞬间饿死）。 */
-export const TOKEN_LOSS_CAP = 2;
-
 /**
- * token 消耗 → 饱食度损失（百分点），单次封顶 TOKEN_LOSS_CAP。
+ * token 消耗 → 饱食度损失（百分点）。
+ * 线性换算、**不封顶**：烧了多少 token 就掉多少饱食度。
  * @param {number} dTokens 本次新增的计费 token 数（输出 + 非缓存输入）
  */
 export function tokensToSatiety(dTokens) {
   if (!Number.isFinite(dTokens) || dTokens <= 0) return 0;
-  return Math.min(TOKEN_LOSS_CAP, dTokens / TOKENS_PER_PERCENT);
+  return dTokens / TOKENS_PER_PERCENT;
 }
 
 /**

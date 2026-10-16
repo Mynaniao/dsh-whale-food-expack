@@ -11,7 +11,7 @@ import {
   HUNGER_INTERVAL_MS, HUNGER_TOAST_MS,
   FED_FULL_AT, FED_HUNGRY_AT, FED_STARVING_AT,
   clamp, decayRate, decay, feed, isHungry, tierOf, canEat, feedTier, pickFresh,
-  tokensToSatiety, formatTokens, TOKENS_PER_PERCENT, TOKEN_LOSS_CAP,
+  tokensToSatiety, formatTokens, TOKENS_PER_PERCENT,
 } from '../assets/satiety.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -166,13 +166,17 @@ check('从满值饿到 0：空闲 100 分钟 / 一直干活 20 分钟', () => {
 });
 
 groups.push('token 换算（干活时的饱食度消耗）');
-// 依据：实测每次 LLM 调用 ≈ 输入 5286 / 输出 1088 tokens；一次工具调用 ≈ 一次调用。
+// 依据：实测每次 LLM 调用平均 非缓存输入 4846 / 输出 1298 tokens（合计 6144）；一次工具调用 ≈ 一次调用。
 check('20000 tokens = 1%（换算基准）', () => assert.equal(tokensToSatiety(20000), 1));
 check('一次工具调用（约 6.4K）≈ 0.32%', () => {
   const v = tokensToSatiety(6400);
   assert.ok(Math.abs(v - 0.32) < 1e-9, '实际 ' + v);
 });
-check('单次封顶 2%（读大文件不会瞬间饿死）', () => assert.equal(tokensToSatiety(500000), TOKEN_LOSS_CAP));
+check('线性换算、不封顶（500000 tokens 就是 25%）', () => {
+  assert.equal(tokensToSatiety(500000), 25);
+  assert.equal(tokensToSatiety(1000000), 50);
+  assert.equal(tokensToSatiety(1e9), 50000);
+});
 check('负数 / 0 / NaN / Infinity 都返回 0', () => {
   assert.equal(tokensToSatiety(0), 0);
   assert.equal(tokensToSatiety(-100), 0);
