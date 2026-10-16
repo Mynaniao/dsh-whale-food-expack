@@ -10,7 +10,7 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](#开发与测试)
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 
-当前版本 **1.5.0**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0
+当前版本 **1.6.0**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0
 
 ---
 
@@ -33,7 +33,7 @@
 |---|---|---|
 | ① | **喂白米饭** | 把白米饭🍚拖到鲸鱼身上 → 鲸鱼张嘴咀嚼、冒一句对应台词并增加饱食度（没拖中会飞回原位） |
 | ② | **续饭功能** | 满碗喂掉后**留一个空碗**；**左键单击空碗**自动盛满，开始下一轮（刷新后仍保持空碗）；注意⚠️：空碗🥣无法拖动 |
-| ③ | **饱食度系统** | 空闲 **−1%/分钟**；**干活时按 token 消耗**（20,000 tokens = −1%）；喂一碗饭 **+5%**。**≤50%** 时每 30 秒主动喊一句饿话，越饿说得越惨（5 档）。数值实时显示在**右上角小气泡**里：深蓝 = 正常、橙色 = 饿了、红色 = 快饿死了 |
+| ③ | **饱食度系统** | 空闲 **−1%/分钟**；**干活时按 token 消耗**（3,000 tokens = −1%，与实际干活的掉速对齐）；喂一碗饭 **+5%**。**≤50%** 时每 30 秒主动喊一句饿话，越饿说得越惨（5 档）。数值实时显示在**右上角小气泡**里：深蓝 = 正常、橙色 = 饿了、红色 = 快饿死了 |
 | ④ | **敲键盘反应** | agent 干活时鲸鱼**敲键盘**并**露出两只手**；每次工具调用吐司报工具名（`🛠 read`）；工具失败变红抖动（`💥 pwsh 失败了`）；开工「🔧 开工！」、收工播报「✨ 干完啦～ 本轮 12.3K tokens · 饱食度 -8.0%」并伸个懒腰 |
 
 ## 安装
@@ -42,7 +42,7 @@
 本插件只是它的附加层，**没有本体不会显示任何东西**。
 
 ```bash
-# 从 npm / 插件市场安装（推荐，已发布 v1.5.0）
+# 从 npm / 插件市场安装（推荐，已发布 v1.6.0）
 dsh plugin --profile web add dsh-whale-food-expack
 
 # 或者直接从 GitHub 安装
@@ -63,14 +63,15 @@ dsh plugin --profile web remove dsh-whale-food-expack
 | 常量 | 当前值 | 含义 |
 |---|---|---|
 | `IDLE_PER_MIN` | `1` | 空闲每分钟掉 1% |
-| `TOKENS_PER_PERCENT` | `20000` | 干活时多少 token 掉 1%（调大更耐饿，调小饿得快） |
+| `TOKENS_PER_PERCENT` | `3000` | 干活时多少 token 掉 1%（调大更耐饿，调小饿得快） |
 | `FEED_GAIN` | `5` | 一碗饭 +5% |
 | `HUNGRY_AT` | `50` | ≤50% 开始喊饿 |
 | `TIER_SPAN` / `TIER_COUNT` | `10` / `5` | 每降 10% 换一档，共 5 档 |
 | `HUNGER_INTERVAL_MS` / `HUNGER_TOAST_MS` | `30000` / `3000` | 每 30 秒一句，吐司停留 3 秒 |
 
-> 20,000 这个数是从真实会话日志量出来的（一次工具调用约 6.4K tokens → 约 −0.32%，
-> 50 步的日常任务约 −16% ≈ 3 碗饭）。推导与计费口径见 [`docs/tech-notes.md`](docs/tech-notes.md)。
+> 3,000 这个数是从真实会话日志量出来的：干活时实测约 **14,574 token/分钟**，
+> 除以旧版"干活 5%/分钟"正好 ≈ 2,900，取整 3,000 —— 也就是**换成 token 计费后，
+> 掉速和原来基本一样**。推导与计费口径见 [`docs/tech-notes.md`](docs/tech-notes.md)。
 
 **台词**都在 `assets/` 里，直接编辑、刷新即生效：
 

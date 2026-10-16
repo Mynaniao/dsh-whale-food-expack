@@ -46,7 +46,7 @@
 | 常量 | 值 | 含义 |
 |---|---|---|
 | `IDLE_PER_MIN` | 1 | 空闲每分钟 −1% |
-| `TOKENS_PER_PERCENT` | 20000 | **干活时**多少 token 掉 1%（2026-10-15 起取代时间倍率）|
+| `TOKENS_PER_PERCENT` | 3000 | **干活时**多少 token 掉 1%（2026-10-15 起取代时间倍率；2026-10-17 调基准）|
 | `WORK_MULTIPLIER` | 5 | **已停用**（旧时间倍率，保留兼容）|
 | `FEED_GAIN` | 5 | 一碗饭 +5% |
 | `HUNGRY_AT` | 50 | ≤50% 开始喊饿话 |
@@ -58,11 +58,12 @@
 
 - **节奏**（`test/satiety.mjs` 有断言）：一碗饭撑 **5 分钟**空闲；
   干活时按 token 算（见下）。
-- **token 换算的由来**：`TOKENS_PER_PERCENT = 20000` 不是拍脑袋定的，是从真实会话日志量出来的
-  （脚本 `pkg/extract-token-stats.mjs`，按**多帧 zstd**解 `~/.dsh/sessions/*/session.v4.jsonl.zstd`，
-  统计 `assistant/chunk` 里的 `usage`）：每次 LLM 调用平均 **输入 5,286 / 输出 1,088 tokens**，
-  一次工具调用 ≈ 一次 LLM 调用 ≈ 6.4K tokens。于是 20,000 tokens = 1% → 一次工具调用约 −0.32%，
-  50 步的日常任务约 −16%（≈3 碗饭）。
+- **token 换算的由来**：`TOKENS_PER_PERCENT = 3000` 不是拍脑袋定的，是从真实会话日志量出来的
+  （脚本 `pkg/compare-token-vs-time.mjs`，按**多帧 zstd**解 `~/.dsh/sessions/*/session.v4.jsonl.zstd`，
+  取"连续干活片段"= 相邻 LLM 调用间隔 ≤5 秒的那些时间片）：
+  实测 **242.9 token/秒 ≈ 14,574 token/分钟**；而旧的固定时间模式是干活 5%/分钟
+  （`IDLE_PER_MIN` 1 × `WORK_MULTIPLIER` 5）→ 持平点 = 14574 / 5 ≈ **2900**，取整 **3000**。
+  换算下来一次工具调用（约 6K token）掉约 **2%**，一个 50 步任务掉约 **100%**（≈20 碗饭）。
 - **计费口径**：只算 **输出 + 非缓存输入**（`inTok + outTok`）。
   DSH 的 `inputTokens` 本身就是"非缓存输入"（Anthropic 口径）——
   实测 `totalTokens === inputTokens + outputTokens + cacheReadTokens`（2074 个样本 100% 吻合），

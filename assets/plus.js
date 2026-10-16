@@ -60,11 +60,10 @@ import {
   var lastHungerLine = '';    // 上一句饿话（相邻两句不重复）
   var workRunning = false;    // agent 是否在干活（干活时按 token 掉，不干活按时间掉）
 
-  // ---------- token → 饱食度 换算（2026-10-15 新增）----------
-  // 依据：本机真实日志实测，每次 LLM 调用平均 输入 5286 / 输出 1088 tokens，
-  //       一次工具调用 ≈ 一次 LLM 调用。
-  // 取 20000 tokens = 1%：一个 50 步的日常任务 ≈ 16% ≈ 3 碗饭，喂饭节奏刚好。
-  var TOKENS_PER_PERCENT = 20000;  // 多少 tokens 掉 1% 饱食度（不封顶）
+  // ---------- token → 饱食度 换算（2026-10-15 新增，2026-10-17 调基准）----------
+  // 基准 3000 token = 1%：实测干活速率约 14,574 token/分钟，
+  // 于是干活时的掉速 ≈ 4.86%/分钟，与旧的"干活 ×5 = 5%/分钟"几乎一致。
+  var TOKENS_PER_PERCENT = 3000;   // 多少 tokens 掉 1% 饱食度（不封顶）
   var tokenCursor = 0;             // 已计入的上次 tokens 值（宿主每轮 turn/start 归零）
   var turnTokenTotal = 0;          // 本轮累计消耗（用于收工播报）
   var turnSatietyLost = 0;         // 本轮累计掉的饱食度（用于收工播报）

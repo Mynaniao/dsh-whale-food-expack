@@ -166,16 +166,20 @@ check('从满值饿到 0：空闲 100 分钟 / 一直干活 20 分钟', () => {
 });
 
 groups.push('token 换算（干活时的饱食度消耗）');
-// 依据：实测每次 LLM 调用平均 非缓存输入 4846 / 输出 1298 tokens（合计 6144）；一次工具调用 ≈ 一次调用。
-check('20000 tokens = 1%（换算基准）', () => assert.equal(tokensToSatiety(20000), 1));
-check('一次工具调用（约 6.4K）≈ 0.32%', () => {
-  const v = tokensToSatiety(6400);
-  assert.ok(Math.abs(v - 0.32) < 1e-9, '实际 ' + v);
+// 依据：实测干活速率约 14,574 token/分钟（连续片段），旧的"干活 5%/分钟"持平点 = 2900 → 取整 3000。
+check('3000 tokens = 1%（换算基准）', () => assert.equal(tokensToSatiety(3000), 1));
+check('一次工具调用（约 6K）≈ 2%', () => {
+  const v = tokensToSatiety(5995);
+  assert.ok(Math.abs(v - 2.0) < 0.02, '实际 ' + v);
 });
-check('线性换算、不封顶（500000 tokens 就是 25%）', () => {
-  assert.equal(tokensToSatiety(500000), 25);
-  assert.equal(tokensToSatiety(1000000), 50);
-  assert.equal(tokensToSatiety(1e9), 50000);
+check('干活掉速与旧的固定时间模式持平（约 5%/分钟）', () => {
+  const perMinute = tokensToSatiety(14574);   // 实测 1 分钟烧的 token
+  assert.ok(perMinute > 4.5 && perMinute < 5.5, '实测 ' + perMinute.toFixed(2) + '%/分钟');
+});
+check('线性换算、不封顶（500000 tokens 就是 166.7%）', () => {
+  assert.equal(Math.round(tokensToSatiety(500000) * 10) / 10, 166.7);
+  assert.equal(tokensToSatiety(3000000), 1000);
+  assert.equal(tokensToSatiety(1e9), 333333.3333333333);
 });
 check('负数 / 0 / NaN / Infinity 都返回 0', () => {
   assert.equal(tokensToSatiety(0), 0);
@@ -189,10 +193,10 @@ check('formatTokens: 999 → 999，1500 → 1.5K，2.5e6 → 2.50M', () => {
   assert.equal(formatTokens(2500000), '2.50M');
   assert.equal(formatTokens(0), '0');
 });
-check('50 步任务 ≈ 12~20% ≈ 3 碗饭（手感校验）', () => {
+check('一个 50 步任务 ≈ 100% ≈ 20 碗饭（手感校验）', () => {
   let acc = 0;
-  for (let i = 0; i < 50; i++) acc += tokensToSatiety(6400);
-  assert.ok(acc > 12 && acc < 20, '50 步应掉 12~20%，实际 ' + acc.toFixed(1));
+  for (let i = 0; i < 50; i++) acc += tokensToSatiety(5995);
+  assert.ok(acc > 85 && acc < 115, '50 步应掉约 100%，实际 ' + acc.toFixed(1));
 });
 
 console.log(`\nok — ${groups.length} 组断言 / ${passed} 项检查全部通过`);

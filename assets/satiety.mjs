@@ -23,13 +23,13 @@ export const WORK_MULTIPLIER = 5;
 /**
  * 多少 token 掉 1% 饱食度。
  *
- * 定这个数的依据（实测，见 `pkg/extract-token-stats.mjs`）：
- *   本机真实会话日志里，每次 LLM 调用平均 **输入 5286 / 输出 1088 tokens**；
- *   一次工具调用 ≈ 一次 LLM 调用（约 6.4K tokens 总吞吐）。
- * 取 20000 → 一次工具调用约 -0.32%，一个 50 步的日常任务约 -16%（≈3 碗饭），
- * 喂饭节奏刚好；取值太大则永远饿不了，太小则一次任务就饿死。
+ * 定这个数的依据（实测，见 `pkg/compare-token-vs-time.mjs`）：
+ *   真实会话日志里"连续干活片段"（相邻 LLM 调用间隔 ≤5 秒）实测 **242.9 token/秒 ≈ 14,574 token/分钟**；
+ *   旧的固定时间模式是干活 5%/分钟（IDLE_PER_MIN × WORK_MULTIPLIER）→ 持平点 = 14574 / 5 ≈ 2900。
+ * 取整 3000 → 干活时的掉速约为旧模式的 **97%**（手感基本一致，只是改由 token 驱动）。
+ * 换算下来：一次工具调用（平均约 6K token）掉约 2%，一个 50 步任务掉约 100%（≈20 碗饭）。
  */
-export const TOKENS_PER_PERCENT = 20000;
+export const TOKENS_PER_PERCENT = 3000;
 
 /**
  * token 消耗 → 饱食度损失（百分点）。
