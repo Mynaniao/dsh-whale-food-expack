@@ -12,7 +12,7 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](#development--testing)
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 
-Current version **1.6.0** ([npm](https://www.npmjs.com/package/dsh-whale-food-expack)) · Requires the upstream widget `dsh-whale-widget` ≥ 0.3.0
+Current version **1.6.1** ([npm](https://www.npmjs.com/package/dsh-whale-food-expack)) · Requires the upstream widget `dsh-whale-widget` ≥ 0.3.0
 
 ---
 
@@ -44,7 +44,7 @@ Feeding rice, typing, and tool calls — all at once:
 This plugin is only an add-on layer; **nothing will show up without the upstream widget**.
 
 ```bash
-# From npm / the plugin marketplace (recommended, v1.6.0 published)
+# From npm / the plugin marketplace (recommended, v1.6.1 published)
 dsh plugin --profile web add dsh-whale-food-expack
 
 # Or straight from GitHub
