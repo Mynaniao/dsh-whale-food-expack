@@ -11,6 +11,8 @@
 [![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/mynaniao/dsh-whale-food-expack)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](#开发与测试)
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
+[![dsh.so risk](https://www.dsh.so/badge/dsh-whale-food-expack.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
+[![dsh.so install · dsh 0.2.1-alpha.4](https://www.dsh.so/badge/install/dsh-whale-food-expack@0.2.1-alpha.4.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
 
 当前版本 **1.6.1**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0
 
