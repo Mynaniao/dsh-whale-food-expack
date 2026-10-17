@@ -1,5 +1,7 @@
 # dsh-whale-food-expack
 
+[English](README-En.md) | [中文](README.md)
+
 > 🍚 给 DSH 的**小鲸鱼记账挂件**加上「喂白米饭 + 干活敲键盘 + 工具显示」的附加包
 >
 > **不修改本体插件** · 纯本机运行 · **不向任何服务器发送数据** · 非官方项目
@@ -125,11 +127,11 @@ dsh plugin --profile web remove dsh-whale-food-expack
 ```bash
 npm test                 # = node test/host.mjs && node test/satiety.mjs && node test/layers.mjs
 node test/host.mjs       # 31 项：注入幂等、事件折叠、token 计费口径、失败判定、并行工具、FIFO 兜底、静态资源解析
-node test/satiety.mjs    # 30 项：下降速率、喂食、档位、语境、相邻不重复、token 换算、台词文件一致性
+node test/satiety.mjs    # 31 项：下降速率、喂食、档位、语境、相邻不重复、token 换算、台词文件一致性
 node test/layers.mjs     # 45 项：层级、皮肤/全屏兼容、桌面端注入行、镜像文字翻正
 ```
 
-**106 条断言**，不联网、不启动 DSH、不碰真实 `~/.dsh`。CI 见 [`.github/workflows/test.yml`](.github/workflows/test.yml)（push / PR 自动跑）。
+**107 条断言**，不联网、不启动 DSH、不碰真实 `~/.dsh`。CI 见 [`.github/workflows/test.yml`](.github/workflows/test.yml)（push / PR 自动跑）。
 
 - Node ≥ 20（仅开发与测试需要；装插件本身不需要）
 - 结构：宿主 `lib/index.js`（折叠 agent 活动成 `/dsh-whale-food-expack/activity.json`，并白名单式暴露 `assets/`）；
