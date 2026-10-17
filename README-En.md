@@ -13,8 +13,10 @@
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 [![dsh.so risk](https://www.dsh.so/badge/dsh-whale-food-expack.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
 [![dsh.so install · dsh 0.2.1-alpha.4](https://www.dsh.so/badge/install/dsh-whale-food-expack@0.2.1-alpha.4.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
+[![dshfind](https://dshfind.com/api/badge/Mynaniao/dsh-whale-food-expack?lang=zh)](https://dshfind.com/zh/plugins/Mynaniao/dsh-whale-food-expack?ref=badge)
+[![dshfind](https://dshfind.com/api/card/Mynaniao/dsh-whale-food-expack?lang=zh)](https://dshfind.com/zh/plugins/Mynaniao/dsh-whale-food-expack?ref=badge)
 
-Current version **1.6.1** ([npm](https://www.npmjs.com/package/dsh-whale-food-expack)) · Requires the upstream widget `dsh-whale-widget` ≥ 0.3.0
+Current version **1.6.2** ([npm](https://www.npmjs.com/package/dsh-whale-food-expack)) · Requires the upstream widget `dsh-whale-widget` ≥ 0.3.0
 
 ---
 
@@ -46,7 +48,7 @@ Feeding rice, typing, and tool calls — all at once:
 This plugin is only an add-on layer; **nothing will show up without the upstream widget**.
 
 ```bash
-# From npm / the plugin marketplace (recommended, v1.6.1 published)
+# From npm / the plugin marketplace (recommended, v1.6.2 published)
 dsh plugin --profile web add dsh-whale-food-expack
 
 # Or straight from GitHub
