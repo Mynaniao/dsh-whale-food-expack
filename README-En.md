@@ -15,7 +15,6 @@
 [![dsh.so install · dsh 0.2.1-rc.3](https://cdn.dsh.so/badge/install/dsh-whale-food-expack@0.2.1-rc.3.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
 [![dsh.so install · dsh 0.2.1-rc.2](https://cdn.dsh.so/badge/install/dsh-whale-food-expack@0.2.1-rc.2.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
 [![dshfind](https://dshfind.com/api/badge/Mynaniao/dsh-whale-food-expack?lang=zh)](https://dshfind.com/zh/plugins/Mynaniao/dsh-whale-food-expack?ref=badge)
-[![dshfind](https://dshfind.com/api/card/Mynaniao/dsh-whale-food-expack?lang=zh)](https://dshfind.com/zh/plugins/Mynaniao/dsh-whale-food-expack?ref=badge)
 
 Current version **1.6.4** ([npm](https://www.npmjs.com/package/dsh-whale-food-expack)) · Requires the upstream widget `dsh-whale-widget` ≥ 0.3.0
 
