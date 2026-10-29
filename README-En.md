@@ -13,6 +13,8 @@
 [![test](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml/badge.svg)](https://github.com/Mynaniao/dsh-whale-food-expack/actions/workflows/test.yml)
 [![dsh.so risk](https://www.dsh.so/badge/dsh-whale-food-expack.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
 [![dsh.so install · dsh 0.2.1-alpha.4](https://www.dsh.so/badge/install/dsh-whale-food-expack@0.2.1-alpha.4.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
+[![dsh.so install · dsh 0.2.1-rc.3](https://cdn.dsh.so/badge/install/dsh-whale-food-expack@0.2.1-rc.3.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
+[![dsh.so install · dsh 0.2.1-rc.2](https://cdn.dsh.so/badge/install/dsh-whale-food-expack@0.2.1-rc.2.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
 [![dshfind](https://dshfind.com/api/badge/Mynaniao/dsh-whale-food-expack?lang=zh)](https://dshfind.com/zh/plugins/Mynaniao/dsh-whale-food-expack?ref=badge)
 [![dshfind](https://dshfind.com/api/card/Mynaniao/dsh-whale-food-expack?lang=zh)](https://dshfind.com/zh/plugins/Mynaniao/dsh-whale-food-expack?ref=badge)
 
