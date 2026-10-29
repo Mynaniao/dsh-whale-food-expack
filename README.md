@@ -16,7 +16,7 @@
 [![dsh.so install · dsh 0.2.1-rc.2](https://cdn.dsh.so/badge/install/dsh-whale-food-expack@0.2.1-rc.2.svg)](https://www.dsh.so/artifact/dsh-whale-food-expack/)
 [![dshfind](https://dshfind.com/api/badge/Mynaniao/dsh-whale-food-expack?lang=zh)](https://dshfind.com/zh/plugins/Mynaniao/dsh-whale-food-expack?ref=badge)
 
-当前版本 **1.6.4**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0
+当前版本 **1.6.5**（[npm](https://www.npmjs.com/package/dsh-whale-food-expack)）· 依赖本体 `dsh-whale-widget` ≥ 0.3.0
 
 ---
 
@@ -48,7 +48,7 @@
 本插件只是它的附加层，**没有本体不会显示任何东西**。
 
 ```bash
-# 从 npm / 插件市场安装（推荐，已发布 v1.6.4）
+# 从 npm / 插件市场安装（推荐，已发布 v1.6.5）
 dsh plugin --profile web add dsh-whale-food-expack
 
 # 或者直接从 GitHub 安装
